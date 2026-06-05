@@ -1,4 +1,29 @@
 import type { AppIconName } from "@/components/shared/AppIcon";
+import type { SourceId } from "@/types/common";
+
+/** Full ordered onboarding flow (welcome and first-question sit outside the
+ * four-step setup stepper). */
+export type OnboardingStep =
+  | "welcome"
+  | "company"
+  | "connect"
+  | "configure"
+  | "build"
+  | "first-question";
+
+/** Company-setup form values, carried across the flow. */
+export type CompanyForm = {
+  company: string;
+  size: string;
+  useCase: string;
+  range: string;
+};
+
+/** A source reference shown under the first-question answer. */
+export type AnswerSource = {
+  id: SourceId;
+  label: string;
+};
 
 export type SetupStepKey = "company" | "connect" | "configure" | "build";
 

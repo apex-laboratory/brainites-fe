@@ -1,34 +1,61 @@
-import { AppLogo } from "@/components/shared/AppLogo";
-import { Button } from "@/components/ui/button";
-import { AppIcon } from "@/components/shared/AppIcon";
 import { useAuth } from "@/app/providers/AuthProvider";
+import {
+  useOnboardingChannels,
+  useOnboardingFlow,
+  useSourceConnections,
+} from "@/features/onboarding/hooks";
+import { StepWelcome } from "@/features/onboarding/components/StepWelcome";
+import { StepCompany } from "@/features/onboarding/components/StepCompany";
+import { StepConnect } from "@/features/onboarding/components/StepConnect";
+import { StepConfigure } from "@/features/onboarding/components/StepConfigure";
+import { StepBuild } from "@/features/onboarding/components/StepBuild";
+import { StepFirstQuestion } from "@/features/onboarding/components/StepFirstQuestion";
 
-/** Phase 1 foundation stub. The full onboarding flow is built in Phase 2. */
+/**
+ * Onboarding orchestrator. Stays thin: composes the flow/connection/channel
+ * hooks and renders the active step. All logic lives in the hooks and steps.
+ */
 export function OnboardingPage() {
-  const { completeOnboarding, logout } = useAuth();
+  const { completeOnboarding } = useAuth();
+  const { step, next, back, company, setCompany } = useOnboardingFlow();
+  const connections = useSourceConnections();
+  const channels = useOnboardingChannels();
 
-  return (
-    <div className="grid min-h-full place-items-center p-6">
-      <div className="w-full max-w-md text-center">
-        <AppLogo size="lg" className="justify-center" />
-        <h1 className="mt-6 text-2xl font-bold text-ink">
-          Let&apos;s build Riverline&apos;s brain
-        </h1>
-        <p className="mt-3 text-sm text-ink-3">
-          The welcome → company → connect → configure → build → first-question
-          flow arrives in Phases 2–3.
-        </p>
-        <div className="mt-8 flex justify-center gap-3">
-          <Button variant="outline" onClick={logout}>
-            <AppIcon name="arrowLeft" />
-            Back
-          </Button>
-          <Button onClick={completeOnboarding}>
-            Open dashboard
-            <AppIcon name="arrow" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
+  switch (step) {
+    case "welcome":
+      return <StepWelcome onNext={next} />;
+    case "company":
+      return (
+        <StepCompany
+          company={company}
+          setCompany={setCompany}
+          onBack={back}
+          onNext={next}
+        />
+      );
+    case "connect":
+      return <StepConnect connections={connections} onBack={back} onNext={next} />;
+    case "configure":
+      return (
+        <StepConfigure
+          range={company.range}
+          setRange={(range) => setCompany({ range })}
+          connectedIds={connections.connectedIds}
+          channels={channels}
+          onBack={back}
+          onNext={next}
+        />
+      );
+    case "build":
+      return <StepBuild onComplete={next} />;
+    case "first-question":
+      return (
+        <StepFirstQuestion
+          companyName={company.company}
+          onDone={completeOnboarding}
+        />
+      );
+    default:
+      return null;
+  }
 }
