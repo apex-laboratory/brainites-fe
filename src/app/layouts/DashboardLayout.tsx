@@ -1,23 +1,54 @@
 import { Outlet } from "react-router-dom";
 
-import { AppLogo } from "@/components/shared/AppLogo";
+import { useAuth } from "@/app/providers/AuthProvider";
+import {
+  DashboardSidebar,
+  DashboardTopBar,
+  ShellOverlays,
+} from "@/features/dashboard/components";
+import {
+  useDashboardNav,
+  useDashboardShell,
+  useSidebarState,
+} from "@/features/dashboard/hooks";
+import { REVIEWS } from "@/features/reviews";
 
 /**
- * Dashboard shell. The full sidebar + top bar are built in Phase 4; this
- * thin scaffold keeps the foundation routable in the meantime.
+ * Dashboard shell (Phase 4): collapsible sidebar + sticky top bar wrapping the
+ * routed page outlet. Global ⌘K / ⌘/ shortcuts and their overlays are owned by
+ * `useDashboardShell`.
  */
 export function DashboardLayout() {
+  const { logout } = useAuth();
+  const { collapsed, toggle } = useSidebarState();
+  const { activeTitle } = useDashboardNav();
+  const { commandPalette, brainChat } = useDashboardShell();
+
+  const reviewCount = REVIEWS.length;
+
   return (
     <div className="flex h-full w-full">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-line bg-cream p-4 md:flex">
-        <AppLogo size="sm" />
-        <p className="mt-6 text-xs text-ink-4">
-          Sidebar navigation arrives in Phase 4.
-        </p>
-      </aside>
-      <main className="h-full min-w-0 flex-1 overflow-y-auto">
-        <Outlet />
-      </main>
+      <DashboardSidebar
+        collapsed={collapsed}
+        reviewCount={reviewCount}
+        onOpenCommand={commandPalette.open}
+        onLogout={logout}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <DashboardTopBar
+          collapsed={collapsed}
+          onToggleSidebar={toggle}
+          activeTitle={activeTitle}
+          reviewCount={reviewCount}
+          onOpenCommand={commandPalette.open}
+        />
+        <main className="min-h-0 flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
+
+      <ShellOverlays commandPalette={commandPalette} brainChat={brainChat} />
     </div>
   );
 }
