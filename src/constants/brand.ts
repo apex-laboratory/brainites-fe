@@ -11,7 +11,6 @@ export const BRAND = {
 } as const;
 
 /**
- * Path to the shared Brainite logo asset. Drop the provided file here.
- * Until it exists, `AppLogo` renders a temporary text lockup.
+ * Brand logo assets live under `src/assets/brand/brainite-exports/` and are
+ * imported directly by `AppLogo` (light/dark wordmark lockups + node mark).
  */
-export const LOGO_ASSET_PATH = "/src/assets/brand/brainite-logo.png";
