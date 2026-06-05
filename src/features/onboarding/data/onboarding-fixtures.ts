@@ -1,5 +1,6 @@
 import type { SourceId } from "@/types/common";
 import type {
+  AnswerSource,
   SetupStep,
   SourceConnectMeta,
   UseCase,
@@ -13,6 +14,16 @@ export const CHANNELS: Record<SourceId, string[]> = {
   github: ["payments-core", "dispute-engine", "runbooks"],
   jira: ["Incident Response", "Platform"],
   zendesk: ["Escalations", "Disputes", "Refunds"],
+};
+
+/** Channels pre-selected when the configure step opens, mirroring the
+ * prototype's defaults. */
+export const DEFAULT_CHANNELS: Record<SourceId, string[]> = {
+  slack: CHANNELS.slack.slice(0, 3),
+  notion: CHANNELS.notion.slice(0, 3),
+  github: CHANNELS.github.slice(0, 2),
+  jira: CHANNELS.jira,
+  zendesk: CHANNELS.zendesk.slice(0, 2),
 };
 
 /** Per-source connect metadata (counts, reads, estimates). */
@@ -59,3 +70,13 @@ export const FIRST_EXAMPLES: string[] = [
   "How do enterprise discounts get approved?",
   "When should incidents be escalated to engineering?",
 ];
+
+/** Static answer shown on the first-question step (source-backed). */
+export const FIRST_ANSWER = {
+  sources: [
+    { id: "notion", label: "Policy Library" },
+    { id: "slack", label: "#cs-escalations" },
+    { id: "zendesk", label: "Refunds view" },
+  ] satisfies AnswerSource[],
+  confidence: 96,
+};
