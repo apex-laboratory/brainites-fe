@@ -296,6 +296,43 @@
   }
 }
 
+/* Brain chat — FAB ping, panel entrance, typing dots */
+@keyframes fab-ping {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+@keyframes panel-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes typing-dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.3;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
 /* ============================================================
    BUILD-BRAIN CINEMATIC SCENE (Phase 3)
    Ported from the prototype (css/ui.css). Continuous motion is
