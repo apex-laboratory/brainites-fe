@@ -44,7 +44,12 @@ export function DashboardLayout() {
           onOpenCommand={commandPalette.open}
         />
         <main className="min-h-0 flex-1 overflow-y-auto">
-          <Outlet />
+          <Outlet
+            context={{
+              askBrain: brainChat.open,
+              openCommand: commandPalette.open,
+            }}
+          />
         </main>
       </div>
 
