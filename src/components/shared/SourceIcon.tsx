@@ -1,6 +1,5 @@
 import type { IconType } from "react-icons";
 import {
-  SiSlack,
   SiNotion,
   SiGithub,
   SiJira,
@@ -11,10 +10,11 @@ import {
 import { cn } from "@/utils/cn";
 import type { SourceId } from "@/types/common";
 import { SOURCES } from "@/constants/sources";
+import slackLogo from "@/assets/brand/slack.png";
 
-/** Provider brand icons, resolved from `react-icons/si`. */
-const SOURCE_ICON_MAP: Record<SourceId, IconType> = {
-  slack: SiSlack,
+/** Provider brand icons, resolved from `react-icons/si`. Slack uses the
+ * supplied full-color asset instead (handled in `SourceIcon`). */
+const SOURCE_ICON_MAP: Record<Exclude<SourceId, "slack">, IconType> = {
   notion: SiNotion,
   github: SiGithub,
   jira: SiJira,
@@ -36,8 +36,26 @@ export function SourceIcon({
   branded = false,
   className,
 }: SourceIconProps) {
-  const Icon = SOURCE_ICON_MAP[id];
   const meta = SOURCES[id];
+
+  // Slack uses the supplied full-color logo asset (always branded).
+  if (id === "slack") {
+    return (
+      <img
+        src={slackLogo}
+        role="img"
+        aria-label={meta.name}
+        title={meta.name}
+        width={size}
+        height={size}
+        style={{ width: size, height: size }}
+        className={cn("shrink-0 object-contain", className)}
+        draggable={false}
+      />
+    );
+  }
+
+  const Icon = SOURCE_ICON_MAP[id];
   return (
     <Icon
       role="img"
