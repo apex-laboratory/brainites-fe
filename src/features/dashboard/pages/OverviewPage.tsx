@@ -1,98 +1,243 @@
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useNavigate } from "react-router-dom";
+
 import {
   AppIcon,
-  MetricCard,
-  NiceAvatar,
-  SectionLabel,
   SourceIcon,
-  Sparkline,
+  SourceTile,
+  StatusBadge,
   StatusIndicator,
 } from "@/components/shared";
-import { SOURCE_LIST } from "@/constants/sources";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ROUTES } from "@/constants/routes";
+import { BRAND } from "@/constants/brand";
+import { SOURCES } from "@/constants/sources";
 
-/**
- * Phase 1 foundation showcase. This temporary view verifies the exit
- * criteria: shadcn components render with Brainite tokens, every icon comes
- * from react-icons, avatars use react-nice-avatar. Replaced by the real
- * Overview screen in Phase 5.
- */
+import { KpiTile } from "../components/KpiTile";
+import { Panel } from "../components/Panel";
+import { useDashboardOutlet } from "../hooks/useDashboardOutlet";
+import { useOverview } from "../hooks/useOverview";
+
+/** Dashboard home — mission-control overview (prototype `BrainPage`). */
 export function OverviewPage() {
+  const navigate = useNavigate();
+  const { askBrain } = useDashboardOutlet();
+  const {
+    greeting,
+    firstName,
+    kpis,
+    reviews,
+    recentDecisions,
+    sourceHealth,
+    activity,
+    suggestions,
+  } = useOverview();
+
   return (
-    <div className="mx-auto max-w-5xl space-y-8 p-6 md:p-8">
-      <header>
-        <SectionLabel>Foundation</SectionLabel>
-        <h1 className="mt-1 text-2xl font-bold text-ink">
-          Good afternoon, Dana
-        </h1>
-        <p className="mt-1 text-sm text-ink-3">
-          Phase 1 scaffolding is live. Tokens, shadcn primitives, shared
-          components and fixtures are wired up.
-        </p>
-      </header>
-
-      <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <MetricCard label="Decisions" value="378" icon="decision" hint="+12 this week" />
-        <MetricCard label="Skills" value="6" icon="skills" hint="2 in review" />
-        <MetricCard
-          label="Calls"
-          value="10.6k"
-          icon="bolt"
-          trailing={<Sparkline data={[120, 160, 180, 210, 240, 260, 290]} width={72} height={28} />}
+    <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-7 md:px-10">
+      {/* greeting */}
+      <div className="flex flex-wrap items-end gap-5">
+        <div>
+          <h1 className="text-[26px] font-bold tracking-[-0.03em] text-ink md:text-[30px]">
+            {greeting}, {firstName}
+          </h1>
+          <p className="mt-1.5 text-[15px] text-ink-3">
+            Here&apos;s what {BRAND.workspace}&apos;s brain learned while you
+            were away.
+          </p>
+        </div>
+        <StatusIndicator
+          tone="live"
+          label="All sources synced · 4m ago"
+          pulse
+          className="ml-auto"
         />
-        <MetricCard label="Sources" value="5" icon="sources" hint="all healthy" />
-      </section>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AppIcon name="sparkles" size={16} className="text-primary" />
-            Primitive check
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button>Primary</Button>
-            <Button variant="solid">Solid</Button>
-            <Button variant="outline">Outline</Button>
-            <Button variant="secondary">Secondary</Button>
-            <Button variant="ghost">Ghost</Button>
-            <Button variant="link">Link</Button>
+      {/* hero ask */}
+      <div className="mt-6 overflow-hidden rounded-2xl border border-line bg-gradient-to-br from-paper-2 to-paper p-[22px] shadow-soft-1">
+        <div className="flex items-center gap-3.5">
+          <span className="grid size-[46px] shrink-0 place-items-center rounded-[13px] bg-brand text-white shadow-[0_6px_18px_var(--accent-glow)]">
+            <AppIcon name="brain" size={24} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[17px] font-bold tracking-[-0.02em] text-ink">
+              Ask your company brain
+            </div>
+            <div className="mt-0.5 text-sm text-ink-3">
+              184 decisions, 52 policies and 37 skills — one question away.
+            </div>
           </div>
+          <Button variant="solid" className="shrink-0" onClick={askBrain}>
+            <AppIcon name="sparkles" size={16} />
+            Open brain
+          </Button>
+        </div>
+        <div className="mt-[18px] flex flex-wrap items-center gap-x-[22px] gap-y-2 border-t border-line pt-4">
+          <span className="text-[13px] font-semibold text-ink-4">Try asking</span>
+          {suggestions.map((question) => (
+            <button
+              key={question}
+              type="button"
+              onClick={askBrain}
+              className="group inline-flex items-center gap-1.5 text-left text-[13.5px] font-medium tracking-[-0.01em] text-ink-2 transition-colors hover:text-brand-ink"
+            >
+              {question}
+              <AppIcon
+                name="arrow"
+                size={13}
+                className="text-ink-4 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-ink"
+              />
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge>Default</Badge>
-            <Badge variant="accent">Active</Badge>
-            <Badge variant="green">Approved</Badge>
-            <Badge variant="amber">Needs review</Badge>
-            <Badge variant="outline">Draft</Badge>
-          </div>
+      {/* KPI row */}
+      <div className="mt-[22px] grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+        {kpis.map((kpi) => (
+          <KpiTile key={kpi.label} {...kpi} />
+        ))}
+      </div>
 
-          <div className="max-w-sm space-y-2">
-            <SectionLabel>Usage</SectionLabel>
-            <Progress value={64} />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-5">
-            <div className="flex items-center gap-3">
-              {SOURCE_LIST.map((s) => (
-                <SourceIcon key={s.id} id={s.id} branded size={20} />
+      {/* main grid */}
+      <div className="mt-[22px] grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1fr)_340px]">
+        {/* left column */}
+        <div className="flex min-w-0 flex-col gap-[22px]">
+          <Panel
+            title="Needs your review"
+            badge={reviews.length}
+            action="Review all"
+            onAction={() => navigate(ROUTES.reviews)}
+            accent
+          >
+            <div className="flex flex-col">
+              {reviews.map((review, i) => (
+                <button
+                  key={review.id}
+                  type="button"
+                  onClick={() => navigate(ROUTES.reviews)}
+                  className={`flex items-center gap-3.5 px-[18px] py-3.5 text-left transition-colors hover:bg-paper ${
+                    i ? "border-t border-line-soft" : ""
+                  }`}
+                >
+                  <SourceTile id={review.src} size={34} iconSize={18} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold tracking-[-0.01em] text-ink">
+                      {review.title}
+                    </div>
+                    <div className="mt-0.5 text-[12.5px] text-ink-3">
+                      {review.kind} · {SOURCES[review.src].name}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    {review.kind === "New skill" ? "Skill" : "Policy"}
+                  </Badge>
+                  <AppIcon
+                    name="chevronRight"
+                    size={16}
+                    className="shrink-0 text-ink-4"
+                  />
+                </button>
               ))}
             </div>
-            <StatusIndicator tone="live" label="Reading 5 sources · live" pulse />
-          </div>
+          </Panel>
 
-          <div className="flex items-center gap-3">
-            {["Dana Reyes", "Marcus Lee", "Priya Shah", "Sam Okafor"].map(
-              (name) => (
-                <NiceAvatar key={name} name={name} size={36} />
-              )
-            )}
-          </div>
-        </CardContent>
-      </Card>
+          <Panel
+            title="Recently extracted"
+            action="View all"
+            onAction={() => navigate(ROUTES.decisions)}
+          >
+            <div className="flex flex-col">
+              {recentDecisions.map((decision, i) => (
+                <button
+                  key={decision.id}
+                  type="button"
+                  onClick={() => navigate(ROUTES.decisions)}
+                  className={`flex items-center gap-3.5 px-[18px] py-3.5 text-left transition-colors hover:bg-paper ${
+                    i ? "border-t border-line-soft" : ""
+                  }`}
+                >
+                  <SourceIcon id={decision.src} size={18} branded />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-semibold tracking-[-0.01em] text-ink">
+                      {decision.title}
+                    </div>
+                    <div className="mt-0.5 truncate text-[12.5px] text-ink-3">
+                      {decision.body}
+                    </div>
+                  </div>
+                  <StatusBadge status={decision.status} className="shrink-0" />
+                  <span className="tnum w-9 shrink-0 text-right text-[11.5px] text-ink-4">
+                    {decision.updated}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Panel>
+        </div>
+
+        {/* right column */}
+        <div className="flex flex-col gap-[22px]">
+          <Panel
+            title="Source health"
+            action="Manage"
+            onAction={() => navigate(ROUTES.sources)}
+          >
+            <div className="flex flex-col">
+              {sourceHealth.map((source, i) => (
+                <div
+                  key={source.meta.id}
+                  className={`flex items-center gap-3 px-[18px] py-2.5 ${
+                    i ? "border-t border-line-soft" : ""
+                  }`}
+                >
+                  <SourceIcon id={source.meta.id} size={18} branded />
+                  <span className="flex-1 text-[13.5px] font-semibold tracking-[-0.01em] text-ink">
+                    {source.meta.name}
+                  </span>
+                  {source.pending > 0 ? (
+                    <Badge variant="amber">{source.pending} pending</Badge>
+                  ) : (
+                    <span className="tnum text-[11.5px] text-ink-4">
+                      {source.sync}
+                    </span>
+                  )}
+                  <StatusIndicator tone="live" pulse />
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="Activity">
+            <div className="flex flex-col">
+              {activity.map((item, i) => (
+                <div
+                  key={`${item.txt}-${i}`}
+                  className={`flex gap-3 px-[18px] py-3 ${
+                    i ? "border-t border-line-soft" : ""
+                  }`}
+                >
+                  <span className="mt-px">
+                    <SourceIcon id={item.src} size={17} branded />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-semibold tracking-[-0.01em] text-ink">
+                      {item.txt}
+                    </div>
+                    <div className="mt-px truncate text-[12.5px] text-ink-3">
+                      {item.det}
+                    </div>
+                  </div>
+                  <span className="tnum shrink-0 text-[11px] text-ink-4">
+                    {item.t}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }

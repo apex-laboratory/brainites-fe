@@ -1,12 +1,71 @@
-import { SectionLabel } from "@/components/shared";
+import { AppIcon, Meter, PageHeader } from "@/components/shared";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
-/** Phase 1 stub. Review queue with approve/reject is built in Phase 5. */
+import { ReviewCard } from "../components/ReviewCard";
+import { useReviews } from "../hooks/useReviews";
+
+/** Review queue triage screen (prototype `ReviewsPage`). */
 export function ReviewsPage() {
+  const { queue, total, done, approve, reject } = useReviews();
+  const progress = total === 0 ? 100 : (done / total) * 100;
+
   return (
-    <div className="mx-auto max-w-5xl p-6 md:p-8">
-      <SectionLabel>Main</SectionLabel>
-      <h1 className="mt-1 text-2xl font-bold text-ink">Reviews</h1>
-      <p className="mt-1 text-sm text-ink-3">Built in Phase 5.</p>
+    <div className="h-full overflow-y-auto">
+      <PageHeader
+        label="Operational · triage"
+        title="Review queue"
+        sub="Proposed changes the brain detected. Approve to merge into company logic."
+        right={<Badge variant="amber">{queue.length} pending</Badge>}
+      />
+
+      <div className="mx-auto max-w-[780px] px-6 pb-14 pt-6 md:px-10">
+        {/* progress strip */}
+        <Card className="mb-[18px] flex items-center gap-[18px] px-5 py-4">
+          <div className="flex-1">
+            <div className="mb-2 flex justify-between">
+              <span className="text-[13.5px] font-semibold text-ink">
+                Today&apos;s review progress
+              </span>
+              <span className="tnum text-[12.5px] text-ink-3">
+                {done} / {total}
+              </span>
+            </div>
+            <Meter value={progress} tone="green" className="h-[7px]" />
+          </div>
+          <div className="h-9 w-px bg-line" />
+          <div className="text-center">
+            <div className="text-[22px] font-semibold tracking-[-0.03em] text-ink">
+              ~30s
+            </div>
+            <div className="text-[11.5px] text-ink-3">avg per item</div>
+          </div>
+        </Card>
+
+        <div className="flex flex-col gap-4">
+          {queue.length === 0 ? (
+            <Card className="px-6 py-16 text-center">
+              <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-green-soft">
+                <AppIcon name="check" size={26} className="text-green" />
+              </div>
+              <h2 className="text-[22px] font-bold text-ink">Queue clear</h2>
+              <p className="mt-2 text-ink-3">
+                Every proposed change has been reviewed. The brain is up to date.
+              </p>
+            </Card>
+          ) : (
+            queue.map((review) => (
+              <ReviewCard
+                key={review.id}
+                review={review}
+                onResolve={(id, verdict) =>
+                  verdict === "approve" ? approve(id) : reject(id)
+                }
+              />
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }

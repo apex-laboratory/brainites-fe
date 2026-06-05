@@ -2,6 +2,7 @@ import type { IconBaseProps, IconType } from "react-icons";
 import {
   HiArrowRight,
   HiArrowLeft,
+  HiArrowUp,
   HiMagnifyingGlass,
   HiCheck,
   HiCheckCircle,
@@ -43,6 +44,7 @@ import { FaBrain } from "react-icons/fa6";
 const ICON_MAP = {
   arrow: HiArrowRight,
   arrowLeft: HiArrowLeft,
+  arrowUp: HiArrowUp,
   search: HiMagnifyingGlass,
   check: HiCheck,
   checkCircle: HiCheckCircle,
