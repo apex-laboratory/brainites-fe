@@ -98,7 +98,7 @@ export function OverviewPage() {
       </div>
 
       {/* KPI row */}
-      <div className="mt-[22px] grid grid-cols-2 gap-3.5 lg:grid-cols-4">
+      <div className="mt-[22px] grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi) => (
           <KpiTile key={kpi.label} {...kpi} />
         ))}
