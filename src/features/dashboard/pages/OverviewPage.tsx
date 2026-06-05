@@ -68,7 +68,11 @@ export function OverviewPage() {
               184 decisions, 52 policies and 37 skills — one question away.
             </div>
           </div>
-          <Button variant="solid" className="shrink-0" onClick={askBrain}>
+          <Button
+            variant="solid"
+            className="shrink-0"
+            onClick={() => askBrain()}
+          >
             <AppIcon name="sparkles" size={16} />
             Open brain
           </Button>
@@ -79,7 +83,7 @@ export function OverviewPage() {
             <button
               key={question}
               type="button"
-              onClick={askBrain}
+              onClick={() => askBrain(question)}
               className="group inline-flex items-center gap-1.5 text-left text-[13.5px] font-medium tracking-[-0.01em] text-ink-2 transition-colors hover:text-brand-ink"
             >
               {question}

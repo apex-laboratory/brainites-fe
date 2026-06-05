@@ -1,14 +1,16 @@
 export { OverviewPage } from "./pages/OverviewPage";
 
 export {
+  CommandPalette,
   DashboardSidebar,
   DashboardTopBar,
-  ShellOverlays,
 } from "./components";
 
 export {
   useDashboardNav,
-  useDashboardShell,
+  useDashboardOutlet,
+  useDashboardShortcuts,
+  useOverview,
   useSidebarState,
 } from "./hooks";
 

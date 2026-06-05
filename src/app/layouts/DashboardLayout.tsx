@@ -2,27 +2,38 @@ import { Outlet } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
 import {
+  CommandPalette,
   DashboardSidebar,
   DashboardTopBar,
-  ShellOverlays,
 } from "@/features/dashboard/components";
 import {
   useDashboardNav,
-  useDashboardShell,
+  useDashboardShortcuts,
   useSidebarState,
 } from "@/features/dashboard/hooks";
+import { BrainChat } from "@/features/brain-chat/components";
+import { useBrainChat } from "@/features/brain-chat/hooks";
+import { useDisclosure } from "@/hooks/useDisclosure";
 import { REVIEWS } from "@/features/reviews";
 
 /**
- * Dashboard shell (Phase 4): collapsible sidebar + sticky top bar wrapping the
- * routed page outlet. Global ⌘K / ⌘/ shortcuts and their overlays are owned by
- * `useDashboardShell`.
+ * Dashboard shell: collapsible sidebar + sticky top bar wrapping the routed
+ * page outlet, plus the global command palette and brain chat. ⌘K / ⌘/ are
+ * wired through `useDashboardShortcuts`.
  */
 export function DashboardLayout() {
   const { logout } = useAuth();
   const { collapsed, toggle } = useSidebarState();
   const { activeTitle } = useDashboardNav();
-  const { commandPalette, brainChat } = useDashboardShell();
+
+  const commandPalette = useDisclosure();
+  const chat = useBrainChat();
+
+  useDashboardShortcuts({
+    toggleCommand: commandPalette.toggle,
+    toggleChat: chat.toggle,
+    closeCommand: commandPalette.close,
+  });
 
   const reviewCount = REVIEWS.length;
 
@@ -46,14 +57,29 @@ export function DashboardLayout() {
         <main className="min-h-0 flex-1 overflow-y-auto">
           <Outlet
             context={{
-              askBrain: brainChat.open,
+              askBrain: (question?: string) =>
+                question ? chat.ask(question) : chat.open(),
               openCommand: commandPalette.open,
             }}
           />
         </main>
       </div>
 
-      <ShellOverlays commandPalette={commandPalette} brainChat={brainChat} />
+      <CommandPalette
+        open={commandPalette.isOpen}
+        onOpenChange={commandPalette.setOpen}
+        onAsk={chat.ask}
+      />
+      <BrainChat
+        isOpen={chat.isOpen}
+        open={chat.open}
+        close={chat.close}
+        send={chat.send}
+        messages={chat.messages}
+        typing={chat.typing}
+        suggestions={chat.suggestions}
+        showSuggestions={chat.showSuggestions}
+      />
     </div>
   );
 }
