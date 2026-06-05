@@ -1,0 +1,244 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   BRAINITE — DESIGN TOKENS
+   Warm ivory · true charcoal · single orange accent
+   Ported from the prototype (css/tokens.css), extended with
+   shadcn/ui HSL semantic tokens.
+   ============================================================ */
+:root {
+  /* --- shadcn semantic tokens (HSL channels) --- */
+  --background: 43 39% 95%;
+  --foreground: 48 13% 7%;
+  --card: 40 60% 98%;
+  --card-foreground: 48 13% 7%;
+  --popover: 40 60% 98%;
+  --popover-foreground: 48 13% 7%;
+  --secondary: 42 39% 89%;
+  --secondary-foreground: 38 12% 31%;
+  --muted: 42 39% 89%;
+  --muted-foreground: 39 10% 46%;
+  --border: 39 31% 83%;
+  --input: 39 31% 83%;
+  --primary: 13 82% 45%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 13 82% 45%;
+  --accent-foreground: 14 84% 38%;
+  --destructive: 7 55% 49%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 13 82% 45%;
+  --radius: 0.625rem;
+
+  /* --- Surfaces (light / ivory — default) --- */
+  --ivory: #f3eee3; /* primary canvas */
+  --cream: #ece5d6; /* secondary / sunken */
+  --paper: #fbf8f2; /* raised cards */
+  --paper-2: #ffffff; /* highest elevation */
+
+  /* --- Ink --- */
+  --ink: #1b1a15; /* true charcoal — headings */
+  --ink-2: #514b3f; /* body */
+  --ink-3: #837b6b; /* muted / captions */
+  --ink-4: #a79e8b; /* faint / labels */
+
+  /* --- Lines --- */
+  --line: #e0d8c8; /* hairline border */
+  --line-2: #d2c9b6; /* stronger divider */
+  --line-soft: #eae3d5; /* barely-there separators */
+
+  /* --- Accent (orange) --- */
+  --accent-hex: #e8481b; /* brainite orange */
+  --accent-ink: #c23a12; /* pressed / text-on-light */
+  --accent-soft: #fbe7dd; /* tint wash */
+  --accent-glow: rgba(232, 72, 27, 0.14);
+
+  /* --- Inverse solid --- */
+  --solid: #201e18; /* near-black solid fill */
+  --solid-ink: #f3eee3; /* text on solid */
+
+  /* --- Semantic --- */
+  --green: #3f8f5b;
+  --green-soft: #e3efe3;
+  --amber: #b9831f;
+  --amber-soft: #f5ead3;
+  --blue: #2e6bd6;
+
+  /* --- Brand source colors (badges) --- */
+  --c-slack: #4a154b;
+  --c-notion: #191919;
+  --c-github: #1b1a15;
+  --c-jira: #2684ff;
+  --c-zendesk: #17494d;
+
+  /* --- Radii --- */
+  --r-xs: 6px;
+  --r-sm: 9px;
+  --r-md: 13px;
+  --r-lg: 18px;
+  --r-xl: 24px;
+
+  /* --- Shadows (soft, low) --- */
+  --sh-1: 0 1px 2px rgba(40, 33, 20, 0.05), 0 1px 1px rgba(40, 33, 20, 0.04);
+  --sh-2: 0 4px 14px rgba(40, 33, 20, 0.07), 0 1px 3px rgba(40, 33, 20, 0.05);
+  --sh-3: 0 18px 50px rgba(34, 28, 16, 0.16), 0 4px 14px rgba(34, 28, 16, 0.08);
+  --sh-window: 0 40px 120px rgba(28, 22, 12, 0.3), 0 12px 40px rgba(28, 22, 12, 0.18);
+
+  /* --- Motion --- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* ============================================================
+   DARK / FOCUS MODE
+   ============================================================ */
+[data-mode="dark"] {
+  --background: 43 19% 7%;
+  --foreground: 43 35% 92%;
+  --card: 43 19% 10%;
+  --card-foreground: 43 35% 92%;
+  --popover: 43 19% 10%;
+  --popover-foreground: 43 35% 92%;
+  --secondary: 40 17% 6%;
+  --secondary-foreground: 41 17% 73%;
+  --muted: 40 17% 6%;
+  --muted-foreground: 41 11% 53%;
+  --border: 40 17% 17%;
+  --input: 40 17% 17%;
+  --primary: 14 100% 59%;
+  --primary-foreground: 0 0% 100%;
+  --accent: 14 100% 59%;
+  --accent-foreground: 14 100% 69%;
+  --ring: 14 100% 59%;
+
+  --ivory: #16140f;
+  --cream: #100e0a;
+  --paper: #1e1b14;
+  --paper-2: #24211a;
+
+  --ink: #f4efe4;
+  --ink-2: #c7bfad;
+  --ink-3: #968d7a;
+  --ink-4: #6b6354;
+
+  --line: #322e25;
+  --line-2: #3e3930;
+  --line-soft: #272319;
+
+  --accent-hex: #ff5a2c;
+  --accent-ink: #ff7a52;
+  --accent-soft: #2a1810;
+  --accent-glow: rgba(255, 90, 44, 0.2);
+
+  --solid: #f3eee3;
+  --solid-ink: #16140f;
+
+  --green-soft: #18271c;
+  --amber-soft: #2a2113;
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --sh-2: 0 4px 14px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --sh-3: 0 18px 50px rgba(0, 0, 0, 0.55), 0 4px 14px rgba(0, 0, 0, 0.4);
+  --sh-window: 0 40px 120px rgba(0, 0, 0, 0.65), 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
+   BASE LAYER
+   ============================================================ */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "ss01", "cv01";
+  }
+
+  /* tabular numbers helper for aligned metrics */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* visible focus rings everywhere */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+/* ============================================================
+   APP SCROLLBAR
+   ============================================================ */
+@layer base {
+  .scroll-y {
+    overflow-y: auto;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--line-2);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--ink-4);
+    background-clip: content-box;
+  }
+}
+
+/* ============================================================
+   SHARED KEYFRAMES
+   ============================================================ */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
