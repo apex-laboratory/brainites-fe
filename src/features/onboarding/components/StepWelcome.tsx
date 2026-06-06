@@ -20,7 +20,10 @@ export function StepWelcome({ onNext }: { onNext: () => void }) {
         </SectionLabel>
         <h1 className="mt-[18px] text-[40px] font-bold leading-[1.0] tracking-tight text-ink motion-safe:animate-fade-up md:text-[60px]">
           Let&apos;s build{" "}
-          <span className="text-brand-ink">{BRAND.workspace}&apos;s</span> brain
+          <span className="font-serif font-normal italic text-brand-ink">
+            {BRAND.workspace}&apos;s
+          </span>{" "}
+          brain
         </h1>
         <p className="mx-auto mt-5 max-w-[560px] text-[17px] leading-[1.5] text-ink-3 motion-safe:animate-fade-up md:text-[19px]">
           In three quick steps, we&apos;ll turn the knowledge buried in your

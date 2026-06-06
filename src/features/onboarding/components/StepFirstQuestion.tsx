@@ -83,7 +83,11 @@ export function StepFirstQuestion({
               Your brain is ready
             </SectionLabel>
             <h1 className="mt-[22px] text-[40px] font-bold tracking-tight text-ink md:text-[56px]">
-              Ask it <span className="text-brand-ink">something</span>.
+              Ask it{" "}
+              <span className="font-serif font-normal italic text-brand-ink">
+                something
+              </span>
+              .
             </h1>
             <p className="mt-4 text-[17px] text-ink-3 md:text-[18px]">
               {companyName || "Your company"}&apos;s knowledge is now one

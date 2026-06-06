@@ -88,6 +88,12 @@
   /* --- Motion --- */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* --- Type families (Hephaestou token system) --- */
+  --font-grotesk: "Hanken Grotesk", system-ui, sans-serif; /* primary / headings / body */
+  --font-head: var(--font-grotesk);
+  --font-serif: "Newsreader", ui-serif, Georgia, serif; /* editorial italic accents */
+  --font-mono: "JetBrains Mono", ui-monospace, monospace; /* tabular numbers */
 }
 
 /* ============================================================
@@ -159,7 +165,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    font-family: var(--font-grotesk);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "ss01", "cv01";

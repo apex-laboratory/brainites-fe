@@ -44,7 +44,14 @@ export function StepBuild({ onComplete }: { onComplete: () => void }) {
           className="mt-4 text-[34px] font-bold tracking-tight text-white md:text-[52px]"
           style={{ textShadow: "0 2px 30px rgba(120,28,2,0.4)" }}
         >
-          {done ? "Your brain is ready." : "Building your brain"}
+          {done ? (
+            <>
+              Your brain is{" "}
+              <span className="font-serif font-normal italic">ready.</span>
+            </>
+          ) : (
+            "Building your brain"
+          )}
         </h1>
         <p className="mx-auto mt-3 min-h-6 max-w-[520px] text-[15px] text-white/85 md:text-[17px]">
           {done
