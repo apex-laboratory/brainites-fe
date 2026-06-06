@@ -13,6 +13,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
+        serif: ["Newsreader", "ui-serif", "Georgia", "serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
       colors: {
