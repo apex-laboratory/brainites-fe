@@ -8,8 +8,8 @@ const STEP_ORDER: OnboardingStep[] = [
   "company",
   "connect",
   "configure",
-  "build",
-  "first-question",
+  "learning",
+  "ready",
 ];
 
 const INITIAL_COMPANY: CompanyForm = {

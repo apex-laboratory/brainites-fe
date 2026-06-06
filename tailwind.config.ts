@@ -15,6 +15,7 @@ const config: Config = {
         sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
         serif: ["Newsreader", "ui-serif", "Georgia", "serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        logo: ["Instrument Serif", "Newsreader", "ui-serif", "serif"],
       },
       colors: {
         /* shadcn semantic tokens (HSL via CSS variables) */

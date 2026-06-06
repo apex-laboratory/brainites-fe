@@ -25,8 +25,9 @@ export function AuthForm() {
       <div className="w-[360px] max-w-full motion-safe:animate-fade-up">
         <AppLogo size="md" />
 
-        <h2 className="mt-8 text-[28px] font-bold tracking-tight text-ink">
+        <h2 className="mt-8 font-logo text-[34px] font-normal leading-[1.05] text-ink md:text-[40px]">
           {isSignup ? "Create your account" : "Welcome back"}
+          <span className="text-[#C2410C]">.</span>
         </h2>
         <p className="mt-1.5 text-[14.5px] text-ink-3">
           {isSignup

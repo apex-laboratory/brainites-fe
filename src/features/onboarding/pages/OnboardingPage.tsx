@@ -8,8 +8,8 @@ import { StepWelcome } from "@/features/onboarding/components/StepWelcome";
 import { StepCompany } from "@/features/onboarding/components/StepCompany";
 import { StepConnect } from "@/features/onboarding/components/StepConnect";
 import { StepConfigure } from "@/features/onboarding/components/StepConfigure";
-import { StepBuild } from "@/features/onboarding/components/StepBuild";
-import { StepFirstQuestion } from "@/features/onboarding/components/StepFirstQuestion";
+import { StepLearning } from "@/features/onboarding/components/StepLearning";
+import { StepReady } from "@/features/onboarding/components/StepReady";
 
 /**
  * Onboarding orchestrator. Stays thin: composes the flow/connection/channel
@@ -46,15 +46,10 @@ export function OnboardingPage() {
           onNext={next}
         />
       );
-    case "build":
-      return <StepBuild onComplete={next} />;
-    case "first-question":
-      return (
-        <StepFirstQuestion
-          companyName={company.company}
-          onDone={completeOnboarding}
-        />
-      );
+    case "learning":
+      return <StepLearning onComplete={next} />;
+    case "ready":
+      return <StepReady onDone={completeOnboarding} />;
     default:
       return null;
   }

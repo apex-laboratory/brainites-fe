@@ -1,10 +1,8 @@
 import type { SourceId } from "@/types/common";
 import type {
-  AnswerSource,
   SetupStep,
   SourceConnectMeta,
   UseCase,
-  WelcomeCard,
 } from "@/features/onboarding/types";
 
 /** Selectable channels / pages / repos / views per source. */
@@ -43,11 +41,12 @@ export const SETUP_STEPS: SetupStep[] = [
   { key: "build", label: "Build the brain", sub: "Extract decisions", icon: "sparkles" },
 ];
 
-/** Welcome screen preview cards. */
-export const WELCOME_CARDS: WelcomeCard[] = [
-  { icon: "sources", t: "Connect your tools", d: "Slack, Notion, GitHub, Jira & Zendesk — read-only." },
-  { icon: "sparkles", t: "Build your brain", d: "We extract the decisions your team already made." },
-  { icon: "brain", t: "Ask anything", d: "Your agents query company knowledge with sources." },
+/** "Learning your world" step: progress checklist completed in sequence. */
+export const LEARNING_STEPS: { t: string; d: string }[] = [
+  { t: "Reading your sources", d: "Slack, Notion, GitHub, Jira, Zendesk" },
+  { t: "Finding decisions & patterns", d: "Extracting resolutions, policies, runbooks" },
+  { t: "Building connections", d: "Linking related topics and outcomes" },
+  { t: "Almost there…", d: "Finalizing your brain" },
 ];
 
 /** Company setup: team size options. */
@@ -63,20 +62,3 @@ export const USE_CASES: UseCase[] = [
 
 /** Configure step: time-range options. */
 export const TIME_RANGES: string[] = ["30 days", "90 days", "6 months", "All time"];
-
-/** First-question step: suggested example questions. */
-export const FIRST_EXAMPLES: string[] = [
-  "What happens when a premium customer requests a refund after 45 days?",
-  "How do enterprise discounts get approved?",
-  "When should incidents be escalated to engineering?",
-];
-
-/** Static answer shown on the first-question step (source-backed). */
-export const FIRST_ANSWER = {
-  sources: [
-    { id: "notion", label: "Policy Library" },
-    { id: "slack", label: "#cs-escalations" },
-    { id: "zendesk", label: "Refunds view" },
-  ] satisfies AnswerSource[],
-  confidence: 96,
-};
