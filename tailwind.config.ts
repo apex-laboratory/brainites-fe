@@ -69,7 +69,9 @@ const config: Config = {
           soft: "var(--line-soft)",
         },
         brand: {
-          DEFAULT: "var(--accent)",
+          /* full hex color — `--accent` holds HSL components for shadcn's
+           * `hsl(var(--accent))` tokens and is NOT a usable color on its own. */
+          DEFAULT: "var(--accent-hex)",
           ink: "var(--accent-ink)",
           soft: "var(--accent-soft)",
         },

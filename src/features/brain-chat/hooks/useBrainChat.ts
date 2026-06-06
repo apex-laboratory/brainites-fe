@@ -19,13 +19,24 @@ function greeting(): ChatMessage {
   };
 }
 
+export type BrainChatState = {
+  messages: ChatMessage[];
+  typing: boolean;
+  /** Send a question to the brain (no-op while a reply is in flight). */
+  send: (text: string) => void;
+  suggestions: string[];
+  /** True while the conversation is just the opening greeting. */
+  showSuggestions: boolean;
+};
+
 /**
- * Owns the brain chat: open state, conversation, the typing indicator, and the
- * static answer matching. `ask` opens the panel and sends a seeded question
- * (used by the Overview suggestions and the command palette).
+ * Owns the brain chat conversation: the message list, the typing indicator,
+ * and the static answer matching. The chat now lives on its own full-page tab
+ * (`BrainChatPage`), so this hook no longer tracks panel open/close state — it
+ * is instantiated once in `DashboardLayout` and shared through
+ * `BrainChatContext` so the conversation persists across navigation.
  */
-export function useBrainChat() {
-  const [isOpen, setIsOpen] = useState(false);
+export function useBrainChat(): BrainChatState {
   const [messages, setMessages] = useState<ChatMessage[]>([greeting()]);
   const [typing, setTyping] = useState(false);
 
@@ -49,27 +60,10 @@ export function useBrainChat() {
     [typing]
   );
 
-  const open = useCallback(() => setIsOpen(true), []);
-  const close = useCallback(() => setIsOpen(false), []);
-  const toggle = useCallback(() => setIsOpen((value) => !value), []);
-
-  const ask = useCallback(
-    (question: string) => {
-      setIsOpen(true);
-      send(question);
-    },
-    [send]
-  );
-
   return {
-    isOpen,
-    open,
-    close,
-    toggle,
-    ask,
-    send,
     messages,
     typing,
+    send,
     suggestions: CHAT_SUGGESTIONS,
     showSuggestions: messages.length === 1 && !typing,
   };

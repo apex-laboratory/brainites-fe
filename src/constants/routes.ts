@@ -3,6 +3,7 @@ export const ROUTES = {
   auth: "/auth",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
+  chat: "/dashboard/chat",
   decisions: "/dashboard/decisions",
   reviews: "/dashboard/reviews",
   sources: "/dashboard/sources",
