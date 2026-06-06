@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { BRAND } from "@/constants/brand";
 import { SOURCES } from "@/constants/sources";
+import { SourceActivityRow, useSourceActivity } from "@/features/sources";
 
 import { KpiTile } from "../components/KpiTile";
 import { Panel } from "../components/Panel";
@@ -32,6 +33,7 @@ export function OverviewPage() {
     activity,
     suggestions,
   } = useOverview();
+  const { sources: liveSources } = useSourceActivity();
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-7 md:px-10">
@@ -183,6 +185,22 @@ export function OverviewPage() {
 
         {/* right column */}
         <div className="flex flex-col gap-[22px]">
+          <Panel
+            title="Reading now"
+            action="Manage"
+            onAction={() => navigate(ROUTES.sources)}
+          >
+            <div className="flex flex-col">
+              {liveSources.map((source, i) => (
+                <SourceActivityRow
+                  key={source.meta.id}
+                  entry={source}
+                  className={i ? "border-t border-line-soft" : undefined}
+                />
+              ))}
+            </div>
+          </Panel>
+
           <Panel
             title="Source health"
             action="Manage"
