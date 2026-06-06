@@ -102,7 +102,9 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
           <AppIcon name="settings" size={16} className="text-ink-4" />
           Workspace settings
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        <DropdownMenuItem
+          onSelect={() => navigate(ROUTES.settings, { state: { tab: "members" } })}
+        >
           <AppIcon name="plus" size={16} className="text-ink-4" />
           Invite team
         </DropdownMenuItem>

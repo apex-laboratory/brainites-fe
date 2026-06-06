@@ -1,6 +1,7 @@
 import { AppIcon, PageHeader, StatStrip } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 
+import { AddSourceDialog } from "../components/AddSourceDialog";
 import { SourceCard } from "../components/SourceCard";
 import { useSourceHealth } from "../hooks/useSourceHealth";
 
@@ -15,10 +16,14 @@ export function SourcesPage() {
         title="Sources"
         sub="Where your brain reads from. Read-only, synced continuously."
         right={
-          <Button variant="outline" size="sm">
-            <AppIcon name="plus" size={15} />
-            Add source
-          </Button>
+          <AddSourceDialog
+            trigger={
+              <Button variant="outline" size="sm">
+                <AppIcon name="plus" size={15} />
+                Add source
+              </Button>
+            }
+          />
         }
       />
 

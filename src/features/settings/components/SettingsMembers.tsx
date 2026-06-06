@@ -6,6 +6,7 @@ import { WORKSPACE } from "@/features/dashboard/data/workspace";
 import { cn } from "@/utils/cn";
 
 import { MEMBERS } from "../data/members";
+import { InviteMemberDialog } from "./InviteMemberDialog";
 
 /** Settings → Members tab: team roster with roles. */
 export function SettingsMembers() {
@@ -18,10 +19,14 @@ export function SettingsMembers() {
             {MEMBERS.length} of {WORKSPACE.memberCount} seats used
           </div>
         </div>
-        <Button variant="solid" size="sm" className="ml-auto">
-          <AppIcon name="plus" size={15} />
-          Invite
-        </Button>
+        <InviteMemberDialog
+          trigger={
+            <Button variant="solid" size="sm" className="ml-auto">
+              <AppIcon name="plus" size={15} />
+              Invite
+            </Button>
+          }
+        />
       </div>
 
       {MEMBERS.map((member, i) => (
