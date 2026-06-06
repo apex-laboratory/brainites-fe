@@ -3,8 +3,8 @@ import { useEffect } from "react";
 export type DashboardShortcutHandlers = {
   /** ⌘K / Ctrl-K — toggle the command palette. */
   toggleCommand: () => void;
-  /** ⌘/ / Ctrl-/ — toggle the brain chat. */
-  toggleChat: () => void;
+  /** ⌘/ / Ctrl-/ — open the brain chat tab. */
+  openChat: () => void;
   /** Escape — close the command palette. */
   closeCommand: () => void;
 };
@@ -15,7 +15,7 @@ export type DashboardShortcutHandlers = {
  */
 export function useDashboardShortcuts({
   toggleCommand,
-  toggleChat,
+  openChat,
   closeCommand,
 }: DashboardShortcutHandlers) {
   useEffect(() => {
@@ -26,7 +26,7 @@ export function useDashboardShortcuts({
         toggleCommand();
       } else if (mod && event.key === "/") {
         event.preventDefault();
-        toggleChat();
+        openChat();
       } else if (event.key === "Escape") {
         closeCommand();
       }
@@ -34,5 +34,5 @@ export function useDashboardShortcuts({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [toggleCommand, toggleChat, closeCommand]);
+  }, [toggleCommand, openChat, closeCommand]);
 }

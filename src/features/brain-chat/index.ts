@@ -1,5 +1,10 @@
-export { BrainChat, ChatMessage } from "./components";
-export { useBrainChat } from "./hooks";
+export { ChatMessage } from "./components";
+export { BrainChatPage } from "./pages/BrainChatPage";
+export { useBrainChat, type BrainChatState } from "./hooks/useBrainChat";
+export {
+  BrainChatProvider,
+  useBrainChatContext,
+} from "./context/BrainChatContext";
 export { answerFor, type BrainReply } from "./data/answer-for";
 export {
   BRAIN_ANSWERS,

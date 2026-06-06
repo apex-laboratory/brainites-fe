@@ -6,6 +6,7 @@ import { DashboardLayout } from "@/app/layouts/DashboardLayout";
 import { AuthPage } from "@/features/auth/pages/AuthPage";
 import { OnboardingPage } from "@/features/onboarding/pages/OnboardingPage";
 import { OverviewPage } from "@/features/dashboard/pages/OverviewPage";
+import { BrainChatPage } from "@/features/brain-chat";
 import { DecisionsPage } from "@/features/decisions/pages/DecisionsPage";
 import { ReviewsPage } from "@/features/reviews/pages/ReviewsPage";
 import { SourcesPage } from "@/features/sources/pages/SourcesPage";
@@ -28,6 +29,7 @@ export function AppRouter() {
 
       <Route path="/dashboard" element={<DashboardLayout />}>
         <Route index element={<OverviewPage />} />
+        <Route path="chat" element={<BrainChatPage />} />
         <Route path="decisions" element={<DecisionsPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
         <Route path="sources" element={<SourcesPage />} />

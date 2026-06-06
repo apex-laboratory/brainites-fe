@@ -13,9 +13,10 @@ export type NavItem = {
   end?: boolean;
 };
 
-/** Primary workspace navigation (Overview · Decisions · Reviews). */
+/** Primary workspace navigation (Overview · Ask brain · Decisions · Reviews). */
 export const NAV_MAIN: NavItem[] = [
-  { key: "overview", label: "Overview", icon: "brain", path: ROUTES.dashboard, end: true },
+  { key: "overview", label: "Overview", icon: "grid", path: ROUTES.dashboard, end: true },
+  { key: "chat", label: "Ask brain", icon: "brain", path: ROUTES.chat },
   { key: "decisions", label: "Decisions", icon: "decision", path: ROUTES.decisions },
   { key: "reviews", label: "Reviews", icon: "review", path: ROUTES.reviews },
 ];
