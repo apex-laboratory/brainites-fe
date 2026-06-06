@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { toast } from "sonner";
+
 import {
   AppIcon,
   MiniStat,
@@ -21,6 +24,23 @@ export interface DecisionDetailProps {
 /** Right-hand decision detail (prototype `DecisionDetail`). */
 export function DecisionDetail({ decision }: DecisionDetailProps) {
   const [ruleHead, ...ruleRest] = decision.rule.split(" ");
+  const [pinned, setPinned] = useState(false);
+
+  const openSource = () => {
+    toast.info(`Opening in ${SOURCES[decision.src].name}`, {
+      description: decision.where,
+    });
+  };
+
+  const togglePin = () => {
+    setPinned((prev) => {
+      const next = !prev;
+      toast.success(next ? "Pinned to your brain" : "Removed from pinned", {
+        description: decision.title,
+      });
+      return next;
+    });
+  };
 
   return (
     <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-14 pt-7 md:px-8">
@@ -36,13 +56,18 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
           </h2>
         </div>
         <div className="ml-auto flex shrink-0 gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={openSource}>
             <AppIcon name="externalLink" size={14} />
             Source
           </Button>
-          <Button variant="solid" size="sm">
-            <AppIcon name="pin" size={14} />
-            Pin
+          <Button
+            variant={pinned ? "outline" : "solid"}
+            size="sm"
+            onClick={togglePin}
+            aria-pressed={pinned}
+          >
+            <AppIcon name={pinned ? "check" : "pin"} size={14} />
+            {pinned ? "Pinned" : "Pin"}
           </Button>
         </div>
       </div>

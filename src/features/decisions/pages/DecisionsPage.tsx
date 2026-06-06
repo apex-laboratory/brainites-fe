@@ -38,7 +38,7 @@ export function DecisionsPage() {
           ))}
         </div>
 
-        {selected && <DecisionDetail decision={selected} />}
+        {selected && <DecisionDetail key={selected.id} decision={selected} />}
       </div>
     </div>
   );

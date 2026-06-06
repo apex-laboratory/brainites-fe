@@ -1,6 +1,14 @@
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { AppIcon } from "@/components/shared";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -102,14 +110,49 @@ export function DashboardTopBar({
           <TooltipContent>Notifications</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button type="button" aria-label="Help" className={ICON_BUTTON}>
-              <AppIcon name="help" size={18} />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent>Help</TooltipContent>
-        </Tooltip>
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Help"
+                  className={cn(ICON_BUTTON, "data-[state=open]:bg-cream data-[state=open]:text-ink")}
+                >
+                  <AppIcon name="help" size={18} />
+                </button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Help</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent align="end" sideOffset={6} className="min-w-56">
+            <DropdownMenuItem
+              onSelect={() => toast.info("Documentation", { description: "The Brainite docs open in a new tab." })}
+            >
+              <AppIcon name="document" size={16} className="text-ink-4" />
+              Documentation
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() =>
+                toast.info("Keyboard shortcuts", {
+                  description: "Press ⌘K to ask your brain or jump to any page.",
+                })
+              }
+            >
+              <AppIcon name="command" size={16} className="text-ink-4" />
+              Keyboard shortcuts
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onSelect={() => {
+                window.open("mailto:support@brainite.com", "_blank", "noopener");
+              }}
+            >
+              <AppIcon name="help" size={16} className="text-ink-4" />
+              Contact support
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

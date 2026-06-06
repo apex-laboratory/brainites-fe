@@ -2,6 +2,7 @@ import { AppIcon, PageHeader, StatStrip, type Stat } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+import { NewSkillDialog } from "../components/NewSkillDialog";
 import { SkillsTable } from "../components/SkillsTable";
 import { useSkillsSearch } from "../hooks/useSkillsSearch";
 
@@ -38,10 +39,14 @@ export function SkillsPage() {
                 className="w-[200px] pl-9"
               />
             </div>
-            <Button variant="solid" size="sm">
-              <AppIcon name="plus" size={15} />
-              New skill
-            </Button>
+            <NewSkillDialog
+              trigger={
+                <Button variant="solid" size="sm">
+                  <AppIcon name="plus" size={15} />
+                  New skill
+                </Button>
+              }
+            />
           </>
         }
       />

@@ -1,3 +1,6 @@
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+
 import {
   AppIcon,
   Meter,
@@ -10,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
 
 import type { SourceHealthEntry } from "../hooks/useSourceHealth";
 
@@ -20,6 +24,7 @@ export interface SourceCardProps {
 /** A single connected-source card (prototype `SourceCard`). */
 export function SourceCard({ entry }: SourceCardProps) {
   const { meta, health } = entry;
+  const navigate = useNavigate();
 
   return (
     <Card className="p-[22px]">
@@ -72,10 +77,23 @@ export function SourceCard({ entry }: SourceCardProps) {
       </div>
 
       <div className="mt-[18px] flex gap-2.5">
-        <Button variant="outline" size="sm" className="flex-1">
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex-1"
+          onClick={() =>
+            toast.info(`${meta.name} settings`, {
+              description: `Scope, channels and sync for ${meta.name}.`,
+            })
+          }
+        >
           Manage
         </Button>
-        <Button variant="ghost" size="sm">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(ROUTES.decisions)}
+        >
           View knowledge
           <AppIcon name="arrow" size={14} />
         </Button>

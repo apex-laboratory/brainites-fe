@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { PageHeader } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,9 +16,16 @@ const TABS: { value: SettingsTab; label: string }[] = [
   { value: "usage", label: "Usage" },
 ];
 
+const isSettingsTab = (value: unknown): value is SettingsTab =>
+  TABS.some((item) => item.value === value);
+
 /** Workspace settings screen (prototype `SettingsPage`). */
 export function SettingsPage() {
-  const [tab, setTab] = useState<SettingsTab>("general");
+  const { state } = useLocation();
+  const requestedTab = (state as { tab?: unknown } | null)?.tab;
+  const [tab, setTab] = useState<SettingsTab>(
+    isSettingsTab(requestedTab) ? requestedTab : "general"
+  );
 
   return (
     <Tabs

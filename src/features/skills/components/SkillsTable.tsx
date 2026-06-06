@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+
 import {
   AppIcon,
   SectionLabel,
@@ -84,6 +86,11 @@ export function SkillsTable({ skills }: SkillsTableProps) {
                 <button
                   type="button"
                   aria-label={`View ${skill.name} diff`}
+                  onClick={() =>
+                    toast.info(`${skill.name} ${skill.v}`, {
+                      description: `Last updated ${skill.updated} · ${skill.calls} calls in 30d.`,
+                    })
+                  }
                   className="grid size-7 place-items-center justify-self-end rounded-md text-ink-3 transition-colors hover:bg-cream hover:text-ink"
                 >
                   <AppIcon name="diff" size={15} />
