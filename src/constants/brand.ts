@@ -1,5 +1,6 @@
 /** Brainite product/brand constants. */
 export const BRAND = {
+  onboardingName: "brainite",
   /** User-facing product name. */
   name: "Brainite",
   /** The workspace represented in static data. */

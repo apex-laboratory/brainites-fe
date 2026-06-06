@@ -9,7 +9,7 @@ import { AuthForm } from "@/features/auth/components/AuthForm";
 export function AuthPage() {
   return (
     <div className="flex min-h-full w-full items-center justify-center bg-ivory p-4 sm:p-6 lg:p-8">
-      <div className="flex min-h-[720px] w-full max-w-[1220px] overflow-hidden rounded-3xl border border-line bg-paper-2 shadow-soft-3">
+      <div className="flex min-h-[720px] w-full max-w-[1440px] overflow-hidden rounded-3xl border border-line bg-paper-2 shadow-soft-3">
         <AuthBrandPanel />
         <AuthForm />
       </div>

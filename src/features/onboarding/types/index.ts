@@ -1,15 +1,14 @@
 import type { AppIconName } from "@/components/shared/AppIcon";
-import type { SourceId } from "@/types/common";
 
-/** Full ordered onboarding flow (welcome and first-question sit outside the
- * four-step setup stepper). */
+/** Full ordered onboarding flow (welcome and ready sit outside the four-step
+ * setup stepper). */
 export type OnboardingStep =
   | "welcome"
   | "company"
   | "connect"
   | "configure"
-  | "build"
-  | "first-question";
+  | "learning"
+  | "ready";
 
 /** Company-setup form values, carried across the flow. */
 export type CompanyForm = {
@@ -19,12 +18,6 @@ export type CompanyForm = {
   range: string;
 };
 
-/** A source reference shown under the first-question answer. */
-export type AnswerSource = {
-  id: SourceId;
-  label: string;
-};
-
 export type SetupStepKey = "company" | "connect" | "configure" | "build";
 
 export type SetupStep = {
@@ -32,12 +25,6 @@ export type SetupStep = {
   label: string;
   sub: string;
   icon: AppIconName;
-};
-
-export type WelcomeCard = {
-  icon: AppIconName;
-  t: string;
-  d: string;
 };
 
 export type UseCase = {
