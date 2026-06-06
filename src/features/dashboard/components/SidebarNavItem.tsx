@@ -32,8 +32,10 @@ export function SidebarNavItem({ item, collapsed, badge }: SidebarNavItemProps) 
       aria-label={collapsed ? item.label : undefined}
       className={({ isActive }) =>
         cn(
-          "relative flex items-center rounded-[9px] text-sm font-medium tracking-[-0.01em] text-ink-3 transition-colors hover:bg-paper hover:text-ink",
-          collapsed ? "mx-auto h-11 w-11 justify-center" : "h-9 gap-[11px] px-2.5",
+          "relative rounded-[9px] text-sm font-medium tracking-[-0.01em] text-ink-3 transition-colors hover:bg-paper hover:text-ink",
+          collapsed
+            ? "mx-auto grid size-11 place-items-center"
+            : "flex h-9 items-center gap-2.5 px-2",
           isActive && "bg-paper-2 font-semibold text-ink shadow-soft-1"
         )
       }
@@ -49,11 +51,18 @@ export function SidebarNavItem({ item, collapsed, badge }: SidebarNavItemProps) 
               )}
             />
           )}
-          <AppIcon
-            name={item.icon}
-            size={18}
-            className={cn("shrink-0", isActive && "text-brand")}
-          />
+          <span
+            className={cn(
+              "flex shrink-0 items-center justify-center",
+              !collapsed && "w-8"
+            )}
+          >
+            <AppIcon
+              name={item.icon}
+              size={18}
+              className={cn(isActive && "text-brand")}
+            />
+          </span>
           {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
           {!collapsed && showBadge && (
             <span className="tnum shrink-0 rounded-full bg-brand px-[7px] py-px text-[11px] font-bold text-white">

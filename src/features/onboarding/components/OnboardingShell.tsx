@@ -86,7 +86,7 @@ export function OnboardingShell({
     <div className="flex h-full w-full bg-ivory">
       {/* LEFT rail (lg+) */}
       <aside className="hidden w-[312px] flex-none flex-col border-r border-line bg-cream px-8 py-[34px] lg:flex">
-        <AppLogo size="md" />
+        <AppLogo size="xl" flush />
         <div className="mt-11">
           <SectionLabel className="mb-1.5">Setup</SectionLabel>
           <h2 className="mb-7 text-[21px] font-bold tracking-tight text-ink">

@@ -31,7 +31,7 @@ export function AuthBrandPanel() {
         </p>
 
         <div className="mt-12">
-          <AppLogo size="lg" onDark />
+          <AppLogo size="lg" onDark flush />
         </div>
       </div>
     </div>

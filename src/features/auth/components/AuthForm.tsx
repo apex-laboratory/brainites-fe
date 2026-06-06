@@ -23,7 +23,7 @@ export function AuthForm() {
   return (
     <div className="flex flex-1 items-center justify-center bg-paper-2 px-6 py-12 sm:px-12">
       <div className="w-[360px] max-w-full motion-safe:animate-fade-up">
-        <AppLogo size="md" />
+        <AppLogo size="lg" flush />
 
         <h2 className="mt-8 font-logo text-[34px] font-normal leading-[1.05] text-ink md:text-[40px]">
           {isSignup ? "Create your account" : "Welcome back"}
