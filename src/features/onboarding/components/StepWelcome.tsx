@@ -19,7 +19,7 @@ export function StepWelcome({ onNext }: { onNext: () => void }) {
 
       {/* logo */}
       <div className="absolute left-0 top-0 p-7 md:p-10">
-        <AppLogo size="md" onDark />
+        <AppLogo size="xl" onDark />
       </div>
 
       {/* content */}

@@ -14,9 +14,33 @@ import logoMark from "@/assets/brand/brainite-exports/favicon-transparent.png";
  */
 
 const SIZES = {
-  sm: { lockup: 22, mark: 26 },
-  md: { lockup: 26, mark: 30 },
-  lg: { lockup: 32, mark: 34 },
+  sm: { lockup: 38, mark: 30 },
+  md: { lockup: 44, mark: 44 },
+  lg: { lockup: 64, mark: 54 },
+  xl: { lockup: 60, mark: 60 },
+} as const;
+
+/**
+ * Intrinsic aspect ratios (width ÷ height) of the exported assets. We derive a
+ * definite pixel width from the rendered height so the image always keeps its
+ * proportions — even as a flex/grid child, where `width: auto` would otherwise
+ * get stretched to the container by `align-items: stretch`.
+ */
+const RATIO = {
+  light: 590 / 256,
+  dark: 1194 / 480,
+  mark: 1,
+} as const;
+
+/**
+ * Fraction of each asset's width that is transparent padding on the left. With
+ * `flush`, we offset the image by this much so the visible glyph's left edge
+ * lines up with adjacent text instead of the asset's invisible bounding box.
+ */
+const LEFT_PAD = {
+  light: 74 / 590,
+  dark: 120 / 1194,
+  mark: 0,
 } as const;
 
 export interface AppLogoProps {
@@ -25,6 +49,9 @@ export interface AppLogoProps {
   onDark?: boolean;
   /** Render only the node mark (e.g. collapsed sidebar). */
   markOnly?: boolean;
+  /** Cancel the asset's transparent left padding so the visible glyph aligns
+   * to the container's left edge (e.g. flush with a heading below it). */
+  flush?: boolean;
   className?: string;
 }
 
@@ -32,19 +59,24 @@ export function AppLogo({
   size = "md",
   onDark = false,
   markOnly = false,
+  flush = false,
   className,
 }: AppLogoProps) {
   const s = SIZES[size];
+  const variant = markOnly ? "mark" : onDark ? "dark" : "light";
   const src = markOnly ? logoMark : onDark ? logoDark : logoLight;
   const height = markOnly ? s.mark : s.lockup;
+  const width = Math.round(height * RATIO[variant]);
+  const marginLeft = flush ? -Math.round(width * LEFT_PAD[variant]) : undefined;
 
   return (
     <img
       src={src}
       alt={BRAND.name}
+      width={width}
       height={height}
-      style={{ height, width: "auto" }}
-      className={cn("inline-block select-none", className)}
+      style={{ height, width, marginLeft }}
+      className={cn("inline-block max-w-full select-none", className)}
       draggable={false}
     />
   );

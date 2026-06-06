@@ -42,7 +42,6 @@ export function DashboardLayout() {
       <DashboardSidebar
         collapsed={collapsed}
         reviewCount={reviewCount}
-        onOpenCommand={commandPalette.open}
         onLogout={logout}
       />
 
