@@ -10,6 +10,7 @@ import { StepConnect } from "@/features/onboarding/components/StepConnect";
 import { StepConfigure } from "@/features/onboarding/components/StepConfigure";
 import { StepLearning } from "@/features/onboarding/components/StepLearning";
 import { StepReady } from "@/features/onboarding/components/StepReady";
+import { StepIntegrate } from "@/features/onboarding/components/StepIntegrate";
 
 /**
  * Onboarding orchestrator. Stays thin: composes the flow/connection/channel
@@ -49,7 +50,9 @@ export function OnboardingPage() {
     case "learning":
       return <StepLearning onComplete={next} />;
     case "ready":
-      return <StepReady onDone={completeOnboarding} />;
+      return <StepReady onNext={next} />;
+    case "integrate":
+      return <StepIntegrate onBack={back} onDone={completeOnboarding} />;
     default:
       return null;
   }

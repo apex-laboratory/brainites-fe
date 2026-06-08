@@ -8,7 +8,8 @@ export type OnboardingStep =
   | "connect"
   | "configure"
   | "learning"
-  | "ready";
+  | "ready"
+  | "integrate";
 
 /** Company-setup form values, carried across the flow. */
 export type CompanyForm = {
