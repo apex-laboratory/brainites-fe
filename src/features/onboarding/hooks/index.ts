@@ -2,3 +2,4 @@ export { useOnboardingFlow } from "./useOnboardingFlow";
 export { useSourceConnections } from "./useSourceConnections";
 export { useOnboardingChannels } from "./useOnboardingChannels";
 export { useLearningProgress } from "./useLearningProgress";
+export { useIntegration } from "./useIntegration";

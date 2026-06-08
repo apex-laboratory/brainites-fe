@@ -1,3 +1,4 @@
+export { useCopyToClipboard } from "./useCopyToClipboard";
 export { useCountUp } from "./useCountUp";
 export { useDebounce } from "./useDebounce";
 export { useDisclosure, type Disclosure } from "./useDisclosure";

@@ -6,7 +6,7 @@ import { SETUP_STEPS } from "@/features/onboarding/data/onboarding-fixtures";
 import dexterFinish from "@/assets/dexter_finish.png";
 
 export interface StepReadyProps {
-  onDone: () => void;
+  onNext: () => void;
 }
 
 /**
@@ -14,7 +14,7 @@ export interface StepReadyProps {
  * column (everything but the rail) with the confirmation copy and the CTA
  * into the dashboard overlaid. Replaces the former first-question step.
  */
-export function StepReady({ onDone }: StepReadyProps) {
+export function StepReady({ onNext }: StepReadyProps) {
   return (
     <OnboardingShell stepIndex={SETUP_STEPS.length} bleed>
       <div className="relative h-full min-h-[420px] w-full overflow-hidden bg-ink">
@@ -36,8 +36,8 @@ export function StepReady({ onDone }: StepReadyProps) {
               {BRAND.name} is now learning from your tools and will get smarter
               every day.
             </p>
-            <Button size="lg" className="mt-7" onClick={onDone}>
-              Go to dashboard
+            <Button size="lg" className="mt-7" onClick={onNext}>
+              Connect your agents
               <AppIcon name="arrow" />
             </Button>
           </div>

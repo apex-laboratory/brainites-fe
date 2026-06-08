@@ -10,6 +10,7 @@ const STEP_ORDER: OnboardingStep[] = [
   "configure",
   "learning",
   "ready",
+  "integrate",
 ];
 
 const INITIAL_COMPANY: CompanyForm = {
