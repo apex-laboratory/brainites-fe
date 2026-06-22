@@ -12,6 +12,7 @@ export const CHANNELS: Record<SourceId, string[]> = {
   github: ["payments-core", "dispute-engine", "runbooks"],
   jira: ["Incident Response", "Platform"],
   zendesk: ["Escalations", "Disputes", "Refunds"],
+  googledrive: ["Product Docs", "Finance", "People Ops", "Shared drives"],
 };
 
 /** Channels pre-selected when the configure step opens, mirroring the
@@ -22,6 +23,7 @@ export const DEFAULT_CHANNELS: Record<SourceId, string[]> = {
   github: CHANNELS.github.slice(0, 2),
   jira: CHANNELS.jira,
   zendesk: CHANNELS.zendesk.slice(0, 2),
+  googledrive: CHANNELS.googledrive.slice(0, 3),
 };
 
 /** Per-source connect metadata (counts, reads, estimates). */
@@ -31,6 +33,7 @@ export const SOURCE_CONNECT_META: Record<SourceId, SourceConnectMeta> = {
   github: { tag: "Code reviews & runbooks", count: "1,120", unit: "PRs & issues", reads: ["payments-core", "dispute-engine"], extra: 1, est: 37 },
   jira: { tag: "Tickets & incidents", count: "640", unit: "tickets", reads: ["Incident Response", "Platform"], extra: 0, est: 44 },
   zendesk: { tag: "Support patterns", count: "2,980", unit: "tickets", reads: ["Escalations", "Disputes", "Refunds"], extra: 1, est: 61 },
+  googledrive: { tag: "Docs, sheets & slides", count: "1,540", unit: "files", reads: ["Product Docs", "Finance", "People Ops"], extra: 4, est: 48 },
 };
 
 /** Two-pane setup stepper definition. */
@@ -43,7 +46,7 @@ export const SETUP_STEPS: SetupStep[] = [
 
 /** "Learning your world" step: progress checklist completed in sequence. */
 export const LEARNING_STEPS: { t: string; d: string }[] = [
-  { t: "Reading your sources", d: "Slack, Notion, GitHub, Jira, Zendesk" },
+  { t: "Reading your sources", d: "Slack, Notion, GitHub, Jira, Zendesk, Google Drive" },
   { t: "Finding decisions & patterns", d: "Extracting resolutions, policies, runbooks" },
   { t: "Building connections", d: "Linking related topics and outcomes" },
   { t: "Almost there…", d: "Finalizing your brain" },

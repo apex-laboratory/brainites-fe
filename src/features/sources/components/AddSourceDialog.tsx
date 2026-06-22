@@ -18,11 +18,10 @@ type Integration = {
   icon: AppIconName;
 };
 
-/** Integrations beyond the five already connected — requestable for now. */
+/** Integrations beyond the ones already connected — requestable for now. */
 const AVAILABLE: Integration[] = [
   { name: "Linear", desc: "Issues, projects and cycles", icon: "decision" },
   { name: "Confluence", desc: "Spaces, pages and docs", icon: "document" },
-  { name: "Google Drive", desc: "Docs, sheets and slides", icon: "database" },
   { name: "Intercom", desc: "Conversations and help center", icon: "review" },
 ];
 
