@@ -4,6 +4,7 @@ import { AppIcon, StatusIndicator } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { BRAND } from "@/constants/brand";
+import { SOURCE_ORDER } from "@/constants/sources";
 
 import { ChatMessage } from "../components/ChatMessage";
 import { useBrainChatContext } from "../context/BrainChatContext";
@@ -64,7 +65,11 @@ export function BrainChatPage() {
           <div className="text-[15px] font-bold tracking-[-0.01em] text-ink">
             {BRAND.workspace} brain
           </div>
-          <StatusIndicator tone="live" label="Reading 5 sources · live" pulse />
+          <StatusIndicator
+            tone="live"
+            label={`Reading ${SOURCE_ORDER.length} sources · live`}
+            pulse
+          />
         </div>
       </div>
 

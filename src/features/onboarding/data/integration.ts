@@ -34,7 +34,7 @@ export const INTEGRATION = {
  */
 export const AGENT_SYSTEM_PROMPT = `You are an agent for ${BRAND.workspace}, backed by the ${BRAND.name} company brain.
 
-The ${BRAND.name} brain is the single source of truth for company decisions, policies, runbooks, and support patterns extracted from Slack, Notion, GitHub, Jira, and Zendesk.
+The ${BRAND.name} brain is the single source of truth for company decisions, policies, runbooks, and support patterns extracted from Slack, Notion, GitHub, Jira, Zendesk, and Google Drive.
 
 Rules:
 - Before answering anything about company policy, process, or past decisions, query the brain via the connected ${BRAND.name} MCP tool.

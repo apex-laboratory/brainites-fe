@@ -1,7 +1,13 @@
 /** Shared cross-feature types. */
 
-/** The five knowledge sources Brainite reads from. */
-export type SourceId = "slack" | "notion" | "github" | "jira" | "zendesk";
+/** The knowledge sources Brainite reads from. */
+export type SourceId =
+  | "slack"
+  | "notion"
+  | "github"
+  | "jira"
+  | "zendesk"
+  | "googledrive";
 
 /** Status keys reused across decisions, skills, and reviews. */
 export type StatusKey =

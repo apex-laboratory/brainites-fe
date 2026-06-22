@@ -42,7 +42,7 @@ export const DEFAULT_ANSWER: {
   sources: AnswerSource[];
   conf: number;
 } = {
-  text: "I searched across all five sources but couldn't find a confident answer. Try rephrasing, or connect more channels so I can learn this.",
+  text: "I searched across all your connected sources but couldn't find a confident answer. Try rephrasing, or connect more channels so I can learn this.",
   sources: [],
   conf: 41,
 };

@@ -11,10 +11,20 @@ import { cn } from "@/utils/cn";
 import type { SourceId } from "@/types/common";
 import { SOURCES } from "@/constants/sources";
 import slackLogo from "@/assets/brand/slack.png";
+import googleDriveLogo from "@/assets/google-drive.png";
 
-/** Provider brand icons, resolved from `react-icons/si`. Slack uses the
- * supplied full-color asset instead (handled in `SourceIcon`). */
-const SOURCE_ICON_MAP: Record<Exclude<SourceId, "slack">, IconType> = {
+/** Sources rendered from a supplied full-color image asset rather than a
+ * `react-icons/si` glyph. */
+const SOURCE_IMG_MAP = {
+  slack: slackLogo,
+  googledrive: googleDriveLogo,
+} satisfies Partial<Record<SourceId, string>>;
+
+type ImgSourceId = keyof typeof SOURCE_IMG_MAP;
+
+/** Provider brand icons, resolved from `react-icons/si`. Image-backed sources
+ * (see `SOURCE_IMG_MAP`) are handled separately in `SourceIcon`. */
+const SOURCE_ICON_MAP: Record<Exclude<SourceId, ImgSourceId>, IconType> = {
   notion: SiNotion,
   github: SiGithub,
   jira: SiJira,
@@ -38,11 +48,12 @@ export function SourceIcon({
 }: SourceIconProps) {
   const meta = SOURCES[id];
 
-  // Slack uses the supplied full-color logo asset (always branded).
-  if (id === "slack") {
+  // Image-backed sources use their supplied full-color logo asset (always
+  // branded), e.g. Slack and Google Drive.
+  if (id in SOURCE_IMG_MAP) {
     return (
       <img
-        src={slackLogo}
+        src={SOURCE_IMG_MAP[id as ImgSourceId]}
         role="img"
         aria-label={meta.name}
         title={meta.name}
@@ -55,7 +66,7 @@ export function SourceIcon({
     );
   }
 
-  const Icon = SOURCE_ICON_MAP[id];
+  const Icon = SOURCE_ICON_MAP[id as Exclude<SourceId, ImgSourceId>];
   return (
     <Icon
       role="img"
