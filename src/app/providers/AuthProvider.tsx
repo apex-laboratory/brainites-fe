@@ -1,58 +1,232 @@
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { useLocalStorage } from "@/hooks/useLocalStorage";
+import { ROUTES } from "@/constants/routes";
 import {
-  FLOW_STORAGE_KEY,
-  ROUTES,
-  type FlowStage,
-} from "@/constants/routes";
+  authApi,
+  type OAuthMode,
+  type OAuthProvider,
+  type Session,
+  type User,
+  type WorkspaceSummary,
+} from "@/features/auth/api";
+import {
+  clearTokens,
+  getRefreshToken,
+  hasSession,
+  onSessionExpired,
+  queryClient,
+  refreshTokens,
+  setTokens,
+} from "@/lib/api";
+
+/** Lifecycle of the session, drives route guards and loading gates. */
+export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
+/**
+ * The display-only slice of the session persisted to localStorage so the shell
+ * can render the user/workspace across reloads. It carries NO tokens — the
+ * access token lives in memory and the refresh token is stored separately by
+ * the token layer. Until the BE ships a `/auth/me`, this snapshot is how we
+ * rehydrate identity after a refresh (see BE_AUTH_QUESTIONS.md).
+ */
+interface SessionSnapshot {
+  user: User;
+  workspace: WorkspaceSummary | null;
+}
+
+const SESSION_SNAPSHOT_KEY = "brainite.session";
 
 type AuthContextValue = {
-  /** Current static flow stage, persisted to localStorage. */
-  stage: FlowStage;
-  /** Signup → onboarding. */
-  signup: () => void;
-  /** Signin → dashboard. */
-  signin: () => void;
-  /** Logout → auth. */
+  status: AuthStatus;
+  user: User | null;
+  workspace: WorkspaceSummary | null;
+  workspaceId: string | null;
+  isAuthenticated: boolean;
+  /** Passwordless email sign-up → routes per the server's `nextStep`. */
+  signup: (email: string) => Promise<void>;
+  /** Passwordless email sign-in → routes per the server's `nextStep`. */
+  signin: (email: string) => Promise<void>;
+  /** Begin OAuth SSO: fetch the consent URL and redirect the browser. */
+  signInWithOAuth: (provider: OAuthProvider, mode?: OAuthMode) => Promise<void>;
+  /** Finish OAuth SSO from the provider redirect (called by the callback page). */
+  completeOAuth: (
+    provider: OAuthProvider,
+    code: string,
+    state: string,
+  ) => Promise<void>;
+  /** Revoke the session and return to the auth screen. */
   logout: () => void;
-  /** Onboarding complete → dashboard. */
+  /** Onboarding finished → dashboard. */
   completeOnboarding: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 /**
- * Static auth flow per the guide. No real authentication: signup routes to
- * onboarding, signin to dashboard, logout back to auth. The active stage is
- * persisted under `heph_flow` for parity with the prototype.
+ * Real, token-backed auth. Keeps the small public surface the app already
+ * consumes (`signup` / `signin` / `logout` / `completeOnboarding`) while adding
+ * session state, OAuth SSO, and silent refresh-based rehydration on reload.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const [stage, setStage] = useLocalStorage<FlowStage>(
-    FLOW_STORAGE_KEY,
-    "auth"
+  const [snapshot, setSnapshot] = useLocalStorage<SessionSnapshot | null>(
+    SESSION_SNAPSHOT_KEY,
+    null,
+  );
+  const [status, setStatus] = useState<AuthStatus>(() =>
+    hasSession() ? "loading" : "unauthenticated",
   );
 
-  const value = useMemo<AuthContextValue>(() => {
-    const go = (next: FlowStage, path: string) => {
-      setStage(next);
-      navigate(path);
+  const applySession = useCallback(
+    (session: Session) => {
+      setTokens({
+        accessToken: session.accessToken,
+        refreshToken: session.refreshToken,
+      });
+      setSnapshot({ user: session.user, workspace: session.workspace });
+      setStatus("authenticated");
+    },
+    [setSnapshot],
+  );
+
+  const clearSession = useCallback(() => {
+    clearTokens();
+    setSnapshot(null);
+    setStatus("unauthenticated");
+    queryClient.clear();
+  }, [setSnapshot]);
+
+  // ── Rehydrate on mount ────────────────────────────────────────────────────
+  // If a refresh token survives in storage, silently mint a fresh access token
+  // and resume the persisted identity. Runs once.
+  const didHydrate = useRef(false);
+  useEffect(() => {
+    if (didHydrate.current) return;
+    didHydrate.current = true;
+
+    let active = true;
+    if (hasSession() && snapshot) {
+      refreshTokens()
+        .then(() => active && setStatus("authenticated"))
+        .catch(() => {
+          // Network failure vs. dead token: `onSessionExpired` already handles
+          // the token-death path; here we just fall back to unauthenticated.
+          if (active) setStatus("unauthenticated");
+        });
+    } else {
+      if (hasSession() || snapshot) clearSession();
+      setStatus("unauthenticated");
+    }
+    return () => {
+      active = false;
     };
-    return {
-      stage,
-      signup: () => go("onboarding", ROUTES.onboarding),
-      signin: () => go("dashboard", ROUTES.dashboard),
-      logout: () => go("auth", ROUTES.auth),
-      completeOnboarding: () => go("dashboard", ROUTES.dashboard),
-    };
-  }, [stage, setStage, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── React to a failed refresh anywhere in the app ─────────────────────────
+  useEffect(
+    () =>
+      onSessionExpired(() => {
+        setSnapshot(null);
+        setStatus("unauthenticated");
+        queryClient.clear();
+        toast.error("Your session expired. Please sign in again.");
+        navigate(ROUTES.auth);
+      }),
+    [navigate, setSnapshot],
+  );
+
+  const routeForNextStep = useCallback(
+    (session: Session) =>
+      navigate(
+        session.nextStep === "dashboard" ? ROUTES.dashboard : ROUTES.onboarding,
+      ),
+    [navigate],
+  );
+
+  const signup = useCallback(
+    async (email: string) => {
+      const session = await authApi.signup(email);
+      applySession(session);
+      routeForNextStep(session);
+    },
+    [applySession, routeForNextStep],
+  );
+
+  const signin = useCallback(
+    async (email: string) => {
+      const session = await authApi.signin(email);
+      applySession(session);
+      routeForNextStep(session);
+    },
+    [applySession, routeForNextStep],
+  );
+
+  const signInWithOAuth = useCallback(
+    async (provider: OAuthProvider, mode: OAuthMode = "signin") => {
+      const { authorizationUrl } = await authApi.oauthStart(provider, mode);
+      window.location.href = authorizationUrl; // full-page provider redirect
+    },
+    [],
+  );
+
+  const completeOAuth = useCallback(
+    async (provider: OAuthProvider, code: string, state: string) => {
+      const session = await authApi.oauthCallback(provider, code, state);
+      applySession(session);
+      routeForNextStep(session);
+    },
+    [applySession, routeForNextStep],
+  );
+
+  const logout = useCallback(() => {
+    // Fire-and-forget: logout must succeed locally even if the network is down.
+    void authApi.logout(getRefreshToken()).catch(() => {});
+    clearSession();
+    navigate(ROUTES.auth);
+  }, [clearSession, navigate]);
+
+  const completeOnboarding = useCallback(() => {
+    navigate(ROUTES.dashboard);
+  }, [navigate]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      status,
+      user: snapshot?.user ?? null,
+      workspace: snapshot?.workspace ?? null,
+      workspaceId: snapshot?.workspace?.id ?? null,
+      isAuthenticated: status === "authenticated",
+      signup,
+      signin,
+      signInWithOAuth,
+      completeOAuth,
+      logout,
+      completeOnboarding,
+    }),
+    [
+      status,
+      snapshot,
+      signup,
+      signin,
+      signInWithOAuth,
+      completeOAuth,
+      logout,
+      completeOnboarding,
+    ],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
@@ -61,4 +235,18 @@ export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error("useAuth must be used within an AuthProvider");
   return ctx;
+}
+
+/**
+ * The active workspace id, guaranteed present. Use inside workspace-scoped
+ * routes (guarded by `RequireWorkspace`), where a missing id is a bug.
+ */
+export function useWorkspaceId(): string {
+  const { workspaceId } = useAuth();
+  if (!workspaceId) {
+    throw new Error(
+      "useWorkspaceId called without an active workspace — is this route guarded by RequireWorkspace?",
+    );
+  }
+  return workspaceId;
 }

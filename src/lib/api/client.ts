@@ -1,0 +1,240 @@
+/**
+ * The typed `fetch` wrapper — the ONLY place in the app that touches raw
+ * `Response` objects or wraps network I/O in try/catch. Everything above it
+ * deals in typed data (validated by zod) or `ApiError`.
+ *
+ * Responsibilities:
+ *  - attach the `Authorization: Bearer` header (unless `skipAuth`)
+ *  - map network failure / timeout / non-2xx into `ApiError`
+ *  - on a 401, transparently refresh once (single-flight) and retry
+ *  - unwrap the `{ data, meta }` success envelope
+ *  - validate the payload against a zod schema at the boundary
+ */
+
+import type { z } from "zod";
+
+import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "./config";
+import { ApiError, type ApiErrorDetail } from "./errors";
+import { getAccessToken, refreshTokens } from "./tokens";
+
+export interface ApiInit {
+  method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
+  /** JSON-serializable request body. Serialized with `JSON.stringify`. */
+  body?: unknown;
+  /** Query-string params; `undefined`/`null` values are dropped. */
+  params?: Record<string, string | number | boolean | undefined | null>;
+  /** Skip the `Authorization` header (for `/auth/*` calls). */
+  skipAuth?: boolean;
+  /** Internal: prevents infinite refresh→retry recursion. */
+  skipAuthRetry?: boolean;
+  signal?: AbortSignal;
+}
+
+/** The backend success envelope. `meta.requestId` aids server-side tracing. */
+interface SuccessEnvelope<T> {
+  data: T;
+  meta?: { requestId?: string; timestamp?: string; [k: string]: unknown };
+}
+
+/** The backend error envelope (camelCase response bodies). */
+interface ErrorEnvelope {
+  error?: { code?: string; message?: string; details?: unknown };
+  detail?: unknown; // FastAPI's default shape, tolerated until BE standardizes.
+  meta?: { requestId?: string };
+}
+
+function buildUrl(path: string, params?: ApiInit["params"]): string {
+  const url = new URL(`${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`);
+  if (params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null) {
+        url.searchParams.set(key, String(value));
+      }
+    }
+  }
+  return url.toString();
+}
+
+/** Perform the fetch, normalizing transport-level failures into ApiError. */
+async function doFetch(path: string, init: ApiInit): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (init.body !== undefined) headers["Content-Type"] = "application/json";
+  if (!init.skipAuth) {
+    const token = getAccessToken();
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Compose the caller's abort signal with a timeout signal.
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const signal = init.signal
+    ? anySignal([init.signal, timeout])
+    : timeout;
+
+  try {
+    return await fetch(buildUrl(path, init.params), {
+      method: init.method ?? "GET",
+      headers,
+      credentials: "include", // send/receive the auth refresh cookie
+      body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+      signal,
+    });
+  } catch (err) {
+    // A timeout abort surfaces as an AbortError / TimeoutError.
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new ApiError("timeout", "The request timed out", null);
+    }
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("timeout", "The request was cancelled", null);
+    }
+    // A rejected fetch (DNS, CORS, offline) is a TypeError.
+    throw new ApiError("network_error", "Could not reach the server", null);
+  }
+}
+
+/** Parse a non-2xx response into a typed ApiError, tolerating malformed bodies. */
+async function toApiError(res: Response): Promise<ApiError> {
+  const code = ApiError.codeForStatus(res.status);
+  const requestId = res.headers.get("x-request-id") ?? undefined;
+
+  let body: ErrorEnvelope | null = null;
+  try {
+    body = (await res.json()) as ErrorEnvelope;
+  } catch {
+    // Non-JSON error (e.g. a proxy's 502 HTML page) — fall back to status text.
+    return new ApiError(code, res.statusText || "Request failed", res.status, undefined, requestId);
+  }
+
+  // Preferred: our `{ error: { code, message, details } }` envelope.
+  if (body?.error) {
+    return new ApiError(
+      normalizeCode(body.error.code, code),
+      body.error.message || res.statusText || "Request failed",
+      res.status,
+      normalizeDetails(body.error.details),
+      body.meta?.requestId ?? requestId,
+    );
+  }
+
+  // Tolerate FastAPI's default shapes: `{ detail: "..." }` or
+  // `{ detail: [{ loc, msg, type }] }` (422 validation).
+  if (body?.detail !== undefined) {
+    if (Array.isArray(body.detail)) {
+      return new ApiError(
+        code,
+        "Validation failed",
+        res.status,
+        normalizeFastApiDetails(body.detail),
+        requestId,
+      );
+    }
+    return new ApiError(code, String(body.detail), res.status, undefined, requestId);
+  }
+
+  return new ApiError(code, res.statusText || "Request failed", res.status, undefined, requestId);
+}
+
+/** Trust the server's error code only if it's one we recognize. */
+function normalizeCode(raw: string | undefined, fallback: ApiError["code"]): ApiError["code"] {
+  const known: ApiError["code"][] = [
+    "validation_error", "unauthorized", "forbidden", "not_found",
+    "conflict", "rate_limited", "server_error", "network_error", "timeout",
+  ];
+  return raw && (known as string[]).includes(raw) ? (raw as ApiError["code"]) : fallback;
+}
+
+function normalizeDetails(details: unknown): ApiErrorDetail[] | undefined {
+  if (!Array.isArray(details)) return undefined;
+  const out: ApiErrorDetail[] = [];
+  for (const d of details) {
+    if (d && typeof d === "object" && "path" in d && "message" in d) {
+      out.push({ path: String(d.path), message: String(d.message) });
+    }
+  }
+  return out.length ? out : undefined;
+}
+
+/** Flatten FastAPI's `[{ loc: [...], msg, type }]` into our detail shape. */
+function normalizeFastApiDetails(details: unknown[]): ApiErrorDetail[] | undefined {
+  const out: ApiErrorDetail[] = [];
+  for (const d of details) {
+    if (d && typeof d === "object" && "msg" in d) {
+      const loc = "loc" in d && Array.isArray(d.loc) ? d.loc : [];
+      // Drop the leading "body"/"query" segment for a clean field path.
+      const path = loc.filter((s) => s !== "body" && s !== "query").join(".");
+      out.push({ path: path || "root", message: String(d.msg) });
+    }
+  }
+  return out.length ? out : undefined;
+}
+
+/**
+ * Issue an API request and validate its response against `schema`.
+ * `schema` should describe the **unwrapped** payload (the value of `data`).
+ * Pass `z.void()`/`z.undefined()` for 204 responses.
+ */
+export async function api<T>(
+  path: string,
+  schema: z.ZodType<T>,
+  init: ApiInit = {},
+): Promise<T> {
+  const res = await doFetch(path, init);
+
+  // Transparent single refresh + retry on an expired access token.
+  if (res.status === 401 && !init.skipAuth && !init.skipAuthRetry) {
+    await refreshTokens(); // single-flight; throws + signals on failure
+    return api(path, schema, { ...init, skipAuthRetry: true });
+  }
+
+  if (!res.ok) throw await toApiError(res);
+
+  if (res.status === 204) return schema.parse(undefined);
+
+  let body: SuccessEnvelope<unknown>;
+  try {
+    body = (await res.json()) as SuccessEnvelope<unknown>;
+  } catch {
+    throw new ApiError("server_error", "Malformed response body", res.status);
+  }
+
+  const result = schema.safeParse(body.data);
+  if (!result.success) {
+    // A schema mismatch means the BE drifted — make it loud and located.
+    if (import.meta.env.DEV) {
+      console.error(`[api] Response validation failed for ${path}`, result.error.flatten());
+    }
+    throw new ApiError(
+      "server_error",
+      `Unexpected response shape from ${path}`,
+      res.status,
+    );
+  }
+  return result.data;
+}
+
+// Convenience verbs. `body`/`params` are threaded through `ApiInit`.
+api.get = <T>(path: string, schema: z.ZodType<T>, init?: Omit<ApiInit, "method" | "body">) =>
+  api(path, schema, { ...init, method: "GET" });
+
+api.post = <T>(path: string, schema: z.ZodType<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
+  api(path, schema, { ...init, method: "POST", body });
+
+api.patch = <T>(path: string, schema: z.ZodType<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
+  api(path, schema, { ...init, method: "PATCH", body });
+
+api.delete = <T>(path: string, schema: z.ZodType<T>, init?: Omit<ApiInit, "method" | "body">) =>
+  api(path, schema, { ...init, method: "DELETE" });
+
+/** Combine multiple AbortSignals into one that aborts when any input does. */
+function anySignal(signals: AbortSignal[]): AbortSignal {
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+      break;
+    }
+    signal.addEventListener("abort", () => controller.abort(signal.reason), {
+      signal: controller.signal,
+    });
+  }
+  return controller.signal;
+}

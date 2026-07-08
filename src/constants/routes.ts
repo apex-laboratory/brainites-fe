@@ -1,6 +1,8 @@
 /** Centralized route paths. Keep these in sync with the router. */
 export const ROUTES = {
   auth: "/auth",
+  /** OAuth SSO redirect target. `:provider` ∈ google | github. */
+  authCallback: "/auth/callback/:provider",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
   chat: "/dashboard/chat",
