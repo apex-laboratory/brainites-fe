@@ -29,9 +29,14 @@ export const SOURCE_ACTIVITY: SourceActivityMap = {
     unit: "view",
     targets: ["Escalations", "Disputes", "Refunds"],
   },
-  googledrive: {
+  google_drive: {
     verb: "Indexing",
     unit: "folder",
     targets: ["Product Docs", "Finance", "People Ops", "Shared drives"],
+  },
+  gmail: {
+    verb: "Reading",
+    unit: "label",
+    targets: ["Escalations", "Vendors", "Approvals"],
   },
 };

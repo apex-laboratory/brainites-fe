@@ -1,0 +1,133 @@
+import { z } from "zod";
+
+// Imported from the module, not the `@/lib/api` barrel: this file must stay a
+// pure schema module, free of the client's `import.meta.env` side effects.
+import { IsoDateTimeSchema } from "@/lib/api/schemas";
+
+/**
+ * Zod schemas for the Sources API (`/api/v1/sources`), per INTEGRATIONS.md —
+ * the shipped wire contract.
+ *
+ * Two asymmetries the backend documents and we live with here:
+ *  - **Responses are camelCase, request bodies are snake_case** and reject
+ *    unknown keys (`extra="forbid"`). Request builders below spell fields in
+ *    snake_case deliberately; do not "fix" them to camelCase.
+ *  - Sources are **not** workspace-scoped in the path. The workspace is taken
+ *    from the JWT, so no `workspaceId` appears in these routes.
+ */
+
+/** Registered providers (`app/integrations/__init__.py`). These double as the
+ * app's `SourceId`, so `SOURCES[source.provider]` resolves name/icon/color. */
+export const SourceProviderSchema = z.enum([
+  "slack",
+  "notion",
+  "github",
+  "jira",
+  "zendesk",
+  "google_drive",
+  "gmail",
+]);
+export type SourceProvider = z.infer<typeof SourceProviderSchema>;
+
+/** Providers whose OAuth needs a tenant subdomain before we can build the
+ * consent URL (the backend `422`s without it). */
+export const SUBDOMAIN_PROVIDERS = ["zendesk"] as const satisfies readonly SourceProvider[];
+
+export function needsSubdomain(provider: SourceProvider): boolean {
+  return (SUBDOMAIN_PROVIDERS as readonly string[]).includes(provider);
+}
+
+/** Backend rule: `^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$`. */
+export const SubdomainSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/, "Enter a valid subdomain, e.g. acme");
+
+/**
+ * `status` / `syncStatus` are presentational only — a dot color and a label. A
+ * provider state we haven't seen must degrade to "unknown", never take the page
+ * down, so these fall back instead of throwing. Fields we *compute* from
+ * (health, counts, ids) stay strict so real drift is loud.
+ */
+export const SourceStatusSchema = z
+  .enum(["connected", "disconnected", "error", "pending", "unknown"])
+  .catch("unknown");
+export type SourceStatus = z.infer<typeof SourceStatusSchema>;
+
+export const SyncStatusSchema = z
+  .enum(["healthy", "syncing", "pending", "error", "unknown"])
+  .catch("unknown");
+export type SyncStatus = z.infer<typeof SyncStatusSchema>;
+
+/**
+ * A connected source. The trailing block is **not** returned by `GET /sources`
+ * today — it lives on the dashboard `overview` payload. Declared optional so the
+ * card renders those blocks when the backend starts sending them and quietly
+ * omits them until it does.
+ */
+export const SourceSchema = z.object({
+  id: z.string(),
+  provider: SourceProviderSchema,
+  name: z.string(),
+  status: SourceStatusSchema,
+  syncStatus: SyncStatusSchema,
+  externalAccountId: z.string().nullable(),
+  lastSyncedAt: IsoDateTimeSchema.nullable(),
+  /** 0–100. `null` before the first sync. */
+  health: z.number().min(0).max(100).nullable(),
+  createdAt: IsoDateTimeSchema,
+
+  pendingItems: z.number().nullish(),
+  activeChannelCount: z.number().nullish(),
+  extractedLabel: z.string().nullish(),
+  /** 7-day ingest series for the sparkline. */
+  ingest7d: z.array(z.number()).nullish(),
+});
+export type Source = z.infer<typeof SourceSchema>;
+
+export const SourceListSchema = z.array(SourceSchema);
+
+/** `POST /sources/{provider}/authorize` → the provider consent URL. */
+export const AuthorizeSchema = z.object({
+  authorizeUrl: z.string().url(),
+});
+export type Authorize = z.infer<typeof AuthorizeSchema>;
+
+/**
+ * A channel / page / repo / view the source can read from. `id` is `null` for a
+ * channel the provider exposes but we've never persisted a selection for, so
+ * `externalId` — not `id` — is the stable key.
+ */
+export const SourceChannelSchema = z.object({
+  id: z.string().nullable(),
+  externalId: z.string(),
+  name: z.string(),
+  selected: z.boolean(),
+  itemCount: z.number(),
+});
+export type SourceChannel = z.infer<typeof SourceChannelSchema>;
+
+export const SourceChannelListSchema = z.array(SourceChannelSchema);
+
+/** Backend bounds for `lookback_days`. */
+export const LOOKBACK_MIN_DAYS = 1;
+export const LOOKBACK_MAX_DAYS = 730;
+
+/** `PATCH /sources/{id}/channels` request body — snake_case, `extra="forbid"`. */
+export const ChannelSelectionSchema = z.object({
+  channels: z.array(
+    z.object({
+      external_id: z.string(),
+      name: z.string(),
+      selected: z.boolean(),
+    }),
+  ),
+  lookback_days: z
+    .number()
+    .int()
+    .min(LOOKBACK_MIN_DAYS)
+    .max(LOOKBACK_MAX_DAYS)
+    .optional(),
+});
+export type ChannelSelection = z.infer<typeof ChannelSelectionSchema>;

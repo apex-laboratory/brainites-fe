@@ -1,5 +1,10 @@
-export { AddSourceDialog } from "./AddSourceDialog";
-export { SourceCard } from "./SourceCard";
+export { AddSourceDialog, type AddSourceDialogProps } from "./AddSourceDialog";
+export { SourceCard, type SourceCardProps } from "./SourceCard";
+export {
+  ManageSourceDialog,
+  type ManageSourceDialogProps,
+} from "./ManageSourceDialog";
+export { SourceStatusLine } from "./SourceStatus";
 export {
   SourceActivityRow,
   type SourceActivityRowProps,

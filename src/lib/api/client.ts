@@ -17,6 +17,14 @@ import { API_BASE_URL, REQUEST_TIMEOUT_MS } from "./config";
 import { ApiError, type ApiErrorDetail } from "./errors";
 import { getAccessToken, refreshTokens } from "./tokens";
 
+/**
+ * Any zod schema that *produces* `T`. The input type is deliberately left as
+ * `unknown` rather than defaulting to `T`: schemas that transform or fall back
+ * (`.transform()`, `.catch()`) accept an input that isn't `T`, and we always
+ * feed these a raw parsed-JSON value anyway.
+ */
+export type ResponseSchema<T> = z.ZodType<T, z.ZodTypeDef, unknown>;
+
 export interface ApiInit {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   /** JSON-serializable request body. Serialized with `JSON.stringify`. */
@@ -174,7 +182,7 @@ function normalizeFastApiDetails(details: unknown[]): ApiErrorDetail[] | undefin
  */
 export async function api<T>(
   path: string,
-  schema: z.ZodType<T>,
+  schema: ResponseSchema<T>,
   init: ApiInit = {},
 ): Promise<T> {
   const res = await doFetch(path, init);
@@ -212,16 +220,16 @@ export async function api<T>(
 }
 
 // Convenience verbs. `body`/`params` are threaded through `ApiInit`.
-api.get = <T>(path: string, schema: z.ZodType<T>, init?: Omit<ApiInit, "method" | "body">) =>
+api.get = <T>(path: string, schema: ResponseSchema<T>, init?: Omit<ApiInit, "method" | "body">) =>
   api(path, schema, { ...init, method: "GET" });
 
-api.post = <T>(path: string, schema: z.ZodType<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
+api.post = <T>(path: string, schema: ResponseSchema<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
   api(path, schema, { ...init, method: "POST", body });
 
-api.patch = <T>(path: string, schema: z.ZodType<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
+api.patch = <T>(path: string, schema: ResponseSchema<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
   api(path, schema, { ...init, method: "PATCH", body });
 
-api.delete = <T>(path: string, schema: z.ZodType<T>, init?: Omit<ApiInit, "method" | "body">) =>
+api.delete = <T>(path: string, schema: ResponseSchema<T>, init?: Omit<ApiInit, "method" | "body">) =>
   api(path, schema, { ...init, method: "DELETE" });
 
 /** Combine multiple AbortSignals into one that aborts when any input does. */

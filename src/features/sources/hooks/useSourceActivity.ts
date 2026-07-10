@@ -17,7 +17,8 @@ const SPEED: Record<SourceId, number> = {
   github: 3.1,
   jira: 1.9,
   zendesk: 2.7,
-  googledrive: 2.1,
+  google_drive: 2.1,
+  gmail: 2.2,
 };
 
 /** Staggered starting offsets so the rows don't all begin in lockstep. */
@@ -27,7 +28,8 @@ const OFFSET: Record<SourceId, number> = {
   github: 80,
   jira: 220,
   zendesk: 120,
-  googledrive: 195,
+  google_drive: 195,
+  gmail: 55,
 };
 
 export type SourceActivityEntry = {

@@ -5,6 +5,7 @@ import {
   SiJira,
   SiZendesk,
   SiGoogle,
+  SiGmail,
 } from "react-icons/si";
 
 import { cn } from "@/utils/cn";
@@ -17,7 +18,7 @@ import googleDriveLogo from "@/assets/google-drive.png";
  * `react-icons/si` glyph. */
 const SOURCE_IMG_MAP = {
   slack: slackLogo,
-  googledrive: googleDriveLogo,
+  google_drive: googleDriveLogo,
 } satisfies Partial<Record<SourceId, string>>;
 
 type ImgSourceId = keyof typeof SOURCE_IMG_MAP;
@@ -29,6 +30,7 @@ const SOURCE_ICON_MAP: Record<Exclude<SourceId, ImgSourceId>, IconType> = {
   github: SiGithub,
   jira: SiJira,
   zendesk: SiZendesk,
+  gmail: SiGmail,
 };
 
 export interface SourceIconProps {

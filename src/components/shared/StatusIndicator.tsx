@@ -16,6 +16,8 @@ export interface StatusIndicatorProps {
   /** Subtle pulse for live/sync states. */
   pulse?: boolean;
   className?: string;
+  /** Restyle the visible label (defaults to muted `text-xs`). */
+  labelClassName?: string;
 }
 
 /**
@@ -27,6 +29,7 @@ export function StatusIndicator({
   label,
   pulse = false,
   className,
+  labelClassName,
 }: StatusIndicatorProps) {
   return (
     <span
@@ -50,7 +53,9 @@ export function StatusIndicator({
           )}
         />
       </span>
-      {label && <span className="text-xs text-ink-3">{label}</span>}
+      {label && (
+        <span className={cn("text-xs text-ink-3", labelClassName)}>{label}</span>
+      )}
     </span>
   );
 }

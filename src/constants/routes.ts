@@ -9,6 +9,9 @@ export const ROUTES = {
   decisions: "/dashboard/decisions",
   reviews: "/dashboard/reviews",
   sources: "/dashboard/sources",
+  /** Where the backend redirects the browser after a source OAuth callback.
+   * Forwarded to `sources`, preserving `?connected=` / `?error=`. */
+  sourcesCallback: "/settings/sources",
   skills: "/dashboard/skills",
   settings: "/dashboard/settings",
 } as const;
