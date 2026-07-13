@@ -8,4 +8,10 @@ export {
   useDashboardOutlet,
   type DashboardOutletContext,
 } from "./useDashboardOutlet";
-export { useOverview, type SourceHealthRow } from "./useOverview";
+export {
+  useOverview,
+  type OverviewActivity,
+  type OverviewDecision,
+  type OverviewReview,
+  type OverviewSourceHealth,
+} from "./useOverview";

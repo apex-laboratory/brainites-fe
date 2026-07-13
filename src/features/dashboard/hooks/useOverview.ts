@@ -1,21 +1,27 @@
-import { SOURCE_ORDER, SOURCES } from "@/constants/sources";
-import { DECISIONS } from "@/features/decisions";
-import { REVIEWS } from "@/features/reviews";
-import { SOURCE_HEALTH } from "@/features/sources";
-import type { SourceHealth } from "@/features/sources/types";
-import type { SourceMeta } from "@/constants/sources";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
-import { ACTIVITY } from "../data/activity";
-import { RECENT_QUESTIONS } from "../data/recent-questions";
-import { CURRENT_USER } from "../data/workspace";
+import { useWorkspaceId } from "@/app/providers/AuthProvider";
+import type { AppIconName } from "@/components/shared";
+import { SOURCES, type SourceMeta } from "@/constants/sources";
+import type { SourceId } from "@/types/common";
+import { formatRelativeTime } from "@/utils/date";
+
 import type { KpiTileData } from "../components/KpiTile";
+import { dashboardApi, dashboardKeys, type Kpi, type Overview } from "../api";
 
-const KPIS: KpiTileData[] = [
-  { n: 184, label: "Decisions", icon: "decision", spark: [120, 138, 150, 162, 170, 178, 184], trend: 8 },
-  { n: 52, label: "Policies", icon: "document", spark: [30, 36, 40, 44, 46, 49, 52], trend: 6 },
-  { n: 37, label: "Skills live", icon: "skills", spark: [12, 18, 22, 26, 30, 34, 37], trend: 12 },
-  { n: 3, label: "Awaiting review", icon: "review", accent: true, spark: [6, 5, 7, 4, 5, 4, 3], trend: -25 },
-];
+const KPI_ICON: Record<Kpi["id"], AppIconName> = {
+  decisions: "decision",
+  policies: "document",
+  skills: "skills",
+  reviews: "review",
+};
+
+/** A backend provider string → a known `SourceId`, or `null` if unrecognized.
+ * Keeps the icon/name lookups (`SOURCES[id]`) from ever indexing undefined. */
+function asSourceId(provider: string | null | undefined): SourceId | null {
+  return provider && provider in SOURCES ? (provider as SourceId) : null;
+}
 
 function greetingForHour(hour: number): string {
   if (hour < 12) return "Good morning";
@@ -23,29 +29,120 @@ function greetingForHour(hour: number): string {
   return "Good evening";
 }
 
-export type SourceHealthRow = SourceHealth & { meta: SourceMeta };
+// ── view-model item types (what OverviewPage renders) ───────────────────────
+export type OverviewReview = { id: string; src: SourceId; title: string; kind: string };
+export type OverviewDecision = {
+  id: string;
+  src: SourceId;
+  title: string;
+  body: string;
+  status: string;
+  updated: string;
+};
+export type OverviewSourceHealth = { meta: SourceMeta; pending: number; sync: string };
+export type OverviewActivity = { txt: string; det: string; src: SourceId; t: string };
+
+function mapKpis(kpis: Overview["kpis"]): KpiTileData[] {
+  return kpis.map((k) => ({
+    n: k.value,
+    label: k.label,
+    icon: KPI_ICON[k.id],
+    spark: k.spark,
+    trend: k.trend,
+    accent: k.id === "reviews",
+  }));
+}
+
+function mapReviews(items: Overview["reviewPreview"]): OverviewReview[] {
+  return items.flatMap((r) => {
+    const src = asSourceId(r.sourceProvider);
+    return src ? [{ id: r.id, src, title: r.title, kind: r.kind }] : [];
+  });
+}
+
+function mapDecisions(items: Overview["recentDecisions"], now: number): OverviewDecision[] {
+  return items.flatMap((d) => {
+    const src = asSourceId(d.sourceProvider);
+    if (!src) return [];
+    return [
+      {
+        id: d.id,
+        src,
+        title: d.title,
+        body: d.summary ?? d.rule ?? "",
+        status: d.status,
+        updated: formatRelativeTime(d.updatedAt, now) ?? "",
+      },
+    ];
+  });
+}
+
+function mapSourceHealth(items: Overview["sourceHealth"], now: number): OverviewSourceHealth[] {
+  return items.flatMap((s) => {
+    const src = asSourceId(s.provider);
+    if (!src) return [];
+    return [
+      {
+        meta: SOURCES[src],
+        pending: s.pendingItems,
+        sync: formatRelativeTime(s.lastSyncedAt, now) ?? s.extractedLabel ?? "—",
+      },
+    ];
+  });
+}
+
+function mapActivity(items: Overview["activity"], now: number): OverviewActivity[] {
+  return items.flatMap((a) => {
+    const src = asSourceId(a.sourceProvider);
+    if (!src) return [];
+    return [
+      {
+        txt: a.title,
+        det: a.detail ?? "",
+        src,
+        t: formatRelativeTime(a.createdAt, now) ?? "",
+      },
+    ];
+  });
+}
 
 /**
- * Read model for the Overview screen. Pulls the static fixtures together so
- * the page stays a thin composition layer.
+ * Read model for the Overview screen. Fetches the aggregated
+ * `/workspaces/{id}/overview` payload and maps it into the view model the page
+ * renders, dropping any row whose provider we don't recognize (so the source
+ * icon/name lookups are always safe). Loading/error are surfaced as flags for
+ * the page to render inline — never a toast.
  */
 export function useOverview() {
-  const greeting = greetingForHour(new Date().getHours());
-  const firstName = CURRENT_USER.name.split(" ")[0];
+  const workspaceId = useWorkspaceId();
 
-  const sourceHealth: SourceHealthRow[] = SOURCE_ORDER.map((id) => ({
-    ...SOURCE_HEALTH[id],
-    meta: SOURCES[id],
-  }));
+  const query = useQuery({
+    queryKey: dashboardKeys.overview(workspaceId),
+    queryFn: () => dashboardApi.overview(workspaceId),
+  });
+
+  const view = useMemo(() => {
+    const now = Date.now();
+    const data = query.data;
+    return {
+      greeting: greetingForHour(new Date(now).getHours()),
+      firstName: data?.greetingName ?? "",
+      workspaceName: data?.workspace.name ?? "",
+      syncLabel: data?.sync.label ?? "",
+      kpis: data ? mapKpis(data.kpis) : [],
+      reviews: data ? mapReviews(data.reviewPreview) : [],
+      recentDecisions: data ? mapDecisions(data.recentDecisions, now) : [],
+      sourceHealth: data ? mapSourceHealth(data.sourceHealth, now) : [],
+      activity: data ? mapActivity(data.activity, now) : [],
+      suggestions: data?.recentQuestions ?? [],
+    };
+  }, [query.data]);
 
   return {
-    greeting,
-    firstName,
-    kpis: KPIS,
-    reviews: REVIEWS,
-    recentDecisions: DECISIONS.slice(0, 4),
-    sourceHealth,
-    activity: ACTIVITY,
-    suggestions: RECENT_QUESTIONS,
+    ...view,
+    isPending: query.isPending,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
   };
 }

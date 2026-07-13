@@ -1,10 +1,12 @@
 export { SettingsPage } from "./pages/SettingsPage";
 export {
+  InviteMemberDialog,
   SetRow,
   SettingsGeneral,
   SettingsMembers,
   SettingsUsage,
 } from "./components";
-export { MEMBERS } from "./data/members";
+export { useMembers, useSettings } from "./hooks";
+export { ROLE_LABEL, settingsApi, settingsKeys } from "./api";
+export type { Member, MemberRole, Settings } from "./api";
 export { USAGE_METRICS, type UsageMetric } from "./data/usage";
-export type { Member, MemberRole } from "./types";

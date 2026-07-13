@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 
 import {
   AppIcon,
+  ErrorState,
+  Skeleton,
   SourceIcon,
   SourceTile,
   StatusBadge,
@@ -10,7 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
-import { BRAND } from "@/constants/brand";
 import { SOURCES } from "@/constants/sources";
 import { SourceActivityRow, useSourceActivity } from "@/features/sources";
 
@@ -26,14 +27,50 @@ export function OverviewPage() {
   const {
     greeting,
     firstName,
+    workspaceName,
+    syncLabel,
     kpis,
     reviews,
     recentDecisions,
     sourceHealth,
     activity,
     suggestions,
+    isPending,
+    isError,
+    error,
+    refetch,
   } = useOverview();
   const { sources: liveSources } = useSourceActivity();
+
+  if (isPending) {
+    return (
+      <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-7 md:px-10">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="mt-6 h-28 w-full rounded-2xl" />
+        <div className="mt-[22px] grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-[120px] rounded-xl" />
+          ))}
+        </div>
+        <div className="mt-[22px] grid grid-cols-1 gap-[22px] lg:grid-cols-[minmax(0,1fr)_340px]">
+          <Skeleton className="h-72 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-7 md:px-10">
+        <ErrorState
+          error={error}
+          onRetry={() => refetch()}
+          title="Couldn't load your overview"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-[1180px] px-6 pb-16 pt-7 md:px-10">
@@ -44,16 +81,18 @@ export function OverviewPage() {
             {greeting}, {firstName}
           </h1>
           <p className="mt-1.5 text-[15px] text-ink-3">
-            Here&apos;s what {BRAND.workspace}&apos;s brain learned while you
-            were away.
+            Here&apos;s what {workspaceName || "your team"}&apos;s brain learned
+            while you were away.
           </p>
         </div>
-        <StatusIndicator
-          tone="live"
-          label="All sources synced · 4m ago"
-          pulse
-          className="ml-auto"
-        />
+        {syncLabel && (
+          <StatusIndicator
+            tone="live"
+            label={syncLabel}
+            pulse
+            className="ml-auto"
+          />
+        )}
       </div>
 
       {/* hero ask */}
@@ -67,7 +106,7 @@ export function OverviewPage() {
               Ask your company brain
             </div>
             <div className="mt-0.5 text-sm text-ink-3">
-              184 decisions, 52 policies and 37 skills — one question away.
+              Every decision, policy and skill your team has — one question away.
             </div>
           </div>
           <Button
