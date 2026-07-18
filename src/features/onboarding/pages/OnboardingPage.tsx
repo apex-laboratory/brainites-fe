@@ -1,12 +1,10 @@
 import { useAuth } from "@/app/providers/AuthProvider";
 import {
   useCreateWorkspace,
-  useOnboardingChannels,
   useOnboardingFlow,
   useOnboardingProgress,
-  useSourceConnections,
 } from "@/features/onboarding/hooks";
-import { toTeamSize, toTimeRange, toUseCase } from "@/features/onboarding/api";
+import { toTeamSize, toUseCase } from "@/features/onboarding/api";
 import { StepWelcome } from "@/features/onboarding/components/StepWelcome";
 import { StepCompany } from "@/features/onboarding/components/StepCompany";
 import { StepConnect } from "@/features/onboarding/components/StepConnect";
@@ -16,20 +14,17 @@ import { StepReady } from "@/features/onboarding/components/StepReady";
 import { StepIntegrate } from "@/features/onboarding/components/StepIntegrate";
 
 /**
- * Onboarding orchestrator. Stays thin: composes the flow/connection/channel
- * hooks and renders the active step.
+ * Onboarding orchestrator. Stays thin: composes the flow hooks and renders the
+ * active step.
  *
- * The one real backend interaction here is workspace creation on the company
- * step — it swaps in a workspace-scoped token and satisfies `RequireWorkspace`.
- * Source connection itself is deferred to the Sources page (connect-later), so
- * the connect/configure/learning steps remain a guided preview; each transition
+ * Real backend interactions: the company step creates the workspace (swapping in
+ * a workspace-scoped token → satisfies `RequireWorkspace`); connect/configure use
+ * the real Sources API (via `StepConnect`/`StepConfigure`). Each transition also
  * records progress best-effort via `useOnboardingProgress`.
  */
 export function OnboardingPage() {
   const { workspaceId, completeOnboarding } = useAuth();
   const { step, next, back, company, setCompany } = useOnboardingFlow();
-  const connections = useSourceConnections();
-  const channels = useOnboardingChannels();
   const createWorkspace = useCreateWorkspace();
   const saveProgress = useOnboardingProgress();
 
@@ -69,7 +64,6 @@ export function OnboardingPage() {
     case "connect":
       return (
         <StepConnect
-          connections={connections}
           onBack={back}
           onNext={() => {
             saveProgress({ step: "connect" });
@@ -80,13 +74,9 @@ export function OnboardingPage() {
     case "configure":
       return (
         <StepConfigure
-          range={company.range}
-          setRange={(range) => setCompany({ range })}
-          connectedIds={connections.connectedIds}
-          channels={channels}
           onBack={back}
           onNext={() => {
-            saveProgress({ step: "configure", timeRange: toTimeRange(company.range) });
+            saveProgress({ step: "configure" });
             next();
           }}
         />

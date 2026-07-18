@@ -1,109 +1,78 @@
-import { cn } from "@/utils/cn";
-import { AppIcon } from "@/components/shared/AppIcon";
+import { AppIcon, EmptyState, ErrorState, Skeleton } from "@/components/shared";
 import { SourceIcon } from "@/components/shared/SourceIcon";
-import { SectionLabel } from "@/components/shared/SectionLabel";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { SOURCES } from "@/constants/sources";
-import type { SourceId } from "@/types/common";
-import {
-  CHANNELS,
-  TIME_RANGES,
-} from "@/features/onboarding/data/onboarding-fixtures";
+import { useSources } from "@/features/sources";
+import { ManageSourceDialog } from "@/features/sources/components";
 import { OnboardingFrame } from "@/features/onboarding/components/OnboardingFrame";
-import type { useOnboardingChannels } from "@/features/onboarding/hooks";
-import type { CompanyForm } from "@/features/onboarding/types";
 
 export interface StepConfigureProps {
-  range: CompanyForm["range"];
-  setRange: (range: string) => void;
-  connectedIds: SourceId[];
-  channels: ReturnType<typeof useOnboardingChannels>;
   onBack: () => void;
   onNext: () => void;
 }
 
-/** Configure step: time range + per-source scope selection. */
-export function StepConfigure({
-  range,
-  setRange,
-  connectedIds,
-  channels,
-  onBack,
-  onNext,
-}: StepConfigureProps) {
+/**
+ * Configure step: scope each *real* connected source — which channels / pages /
+ * repos it reads and how far back — via the same {@link ManageSourceDialog} the
+ * Sources page uses (`GET`/`PATCH /sources/{id}/channels`). Scoping is optional;
+ * "Build my brain" advances regardless.
+ */
+export function StepConfigure({ onBack, onNext }: StepConfigureProps) {
+  const { sources, isPending, isError, error, refetch } = useSources();
+
   return (
     <OnboardingFrame
       stepIndex={2}
       title="Choose what the brain should read"
-      sub="Start narrow. You can widen your brain's coverage anytime."
+      sub="Scope each source to what matters. Start narrow — you can widen anytime."
       onBack={onBack}
       onNext={onNext}
+      canNext
       nextLabel="Build my brain"
     >
-      <div className="flex flex-col gap-3.5">
-        {/* time range segmented control */}
-        <Card className="flex flex-wrap items-center gap-4 p-[18px] px-[22px]">
-          <SectionLabel className="flex-none">Time range</SectionLabel>
-          <div className="ml-auto flex gap-[3px] rounded-md bg-cream p-[3px]">
-            {TIME_RANGES.map((r) => {
-              const on = range === r;
-              return (
-                <button
-                  key={r}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => setRange(r)}
-                  className={cn(
-                    "rounded-[7px] px-4 py-[9px] text-[13.5px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                    on
-                      ? "bg-paper-2 text-ink shadow-soft-1"
-                      : "text-ink-3 hover:text-ink"
-                  )}
-                >
-                  {r}
-                </button>
-              );
-            })}
-          </div>
-        </Card>
-
-        {/* connected source scopes */}
-        {connectedIds.map((id) => (
-          <Card key={id} className="p-[18px] px-[22px]">
-            <div className="mb-3.5 flex items-center gap-2.5">
-              <SourceIcon id={id} size={20} branded />
-              <span className="text-[15px] font-bold text-ink">
-                {SOURCES[id].name}
-              </span>
-              <span className="ml-1.5 text-[12.5px] text-ink-4">
-                {channels.countFor(id)} selected
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2.5">
-              {CHANNELS[id].map((channel) => {
-                const on = channels.isSelected(id, channel);
-                return (
-                  <button
-                    key={channel}
-                    type="button"
-                    aria-pressed={on}
-                    onClick={() => channels.toggle(id, channel)}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-[13px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      on
-                        ? "border-primary bg-brand-soft text-brand-ink"
-                        : "border-line-2 bg-paper text-ink-2 hover:border-ink-4"
-                    )}
-                  >
-                    {on && <AppIcon name="check" size={13} />}
-                    {channel}
-                  </button>
-                );
-              })}
-            </div>
-          </Card>
-        ))}
-      </div>
+      {isPending ? (
+        <div className="flex flex-col gap-3.5">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton key={i} className="h-[76px] rounded-xl" />
+          ))}
+        </div>
+      ) : isError ? (
+        <ErrorState
+          error={error}
+          onRetry={() => void refetch()}
+          title="Couldn't load your sources"
+        />
+      ) : sources.length === 0 ? (
+        <EmptyState
+          icon="sources"
+          title="No sources connected yet"
+          sub="Go back to connect a source, or skip — you can scope what your brain reads any time from Sources."
+        />
+      ) : (
+        <div className="flex flex-col gap-3.5">
+          {sources.map(({ source, meta }) => (
+            <Card key={source.id} className="flex items-center gap-3.5 p-[18px] px-[22px]">
+              <SourceIcon id={source.provider} size={22} branded />
+              <div className="min-w-0 flex-1">
+                <div className="text-[15px] font-bold tracking-tight text-ink">
+                  {meta.name}
+                </div>
+                <div className="mt-px text-[12.5px] text-ink-3">{meta.tag}</div>
+              </div>
+              <ManageSourceDialog
+                source={source}
+                meta={meta}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <AppIcon name="settings" size={14} />
+                    Scope
+                  </Button>
+                }
+              />
+            </Card>
+          ))}
+        </div>
+      )}
     </OnboardingFrame>
   );
 }
