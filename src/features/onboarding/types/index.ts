@@ -34,19 +34,3 @@ export type UseCase = {
   d: string;
   icon: AppIconName;
 };
-
-/** Per-source metadata shown on the connect/configure steps. */
-export type SourceConnectMeta = {
-  tag: string;
-  /** Item count (pre-formatted, e.g. "3,412"). */
-  count: string;
-  unit: string;
-  /** Example items the brain would read. */
-  reads: string[];
-  /** Count of additional unlisted items. */
-  extra: number;
-  /** Estimated decisions extractable from this source. */
-  est: number;
-};
-
-export type ConnectionStatus = "idle" | "connecting" | "connected";

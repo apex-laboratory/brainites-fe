@@ -1,43 +1,4 @@
-import type { SourceId } from "@/types/common";
-import type {
-  SetupStep,
-  SourceConnectMeta,
-  UseCase,
-} from "@/features/onboarding/types";
-
-/** Selectable channels / pages / repos / views per source. */
-export const CHANNELS: Record<SourceId, string[]> = {
-  slack: ["#cs-escalations", "#incidents", "#refunds-policy", "#deal-desk", "#eng-oncall"],
-  notion: ["Support Playbook", "Ops Runbooks", "Policy Library", "Eng Handbook"],
-  github: ["payments-core", "dispute-engine", "runbooks"],
-  jira: ["Incident Response", "Platform"],
-  zendesk: ["Escalations", "Disputes", "Refunds"],
-  google_drive: ["Product Docs", "Finance", "People Ops", "Shared drives"],
-  gmail: ["Escalations", "Vendors", "Approvals"],
-};
-
-/** Channels pre-selected when the configure step opens, mirroring the
- * prototype's defaults. */
-export const DEFAULT_CHANNELS: Record<SourceId, string[]> = {
-  slack: CHANNELS.slack.slice(0, 3),
-  notion: CHANNELS.notion.slice(0, 3),
-  github: CHANNELS.github.slice(0, 2),
-  jira: CHANNELS.jira,
-  zendesk: CHANNELS.zendesk.slice(0, 2),
-  google_drive: CHANNELS.google_drive.slice(0, 3),
-  gmail: CHANNELS.gmail.slice(0, 2),
-};
-
-/** Per-source connect metadata (counts, reads, estimates). */
-export const SOURCE_CONNECT_META: Record<SourceId, SourceConnectMeta> = {
-  slack: { tag: "Conversations & decisions", count: "3,412", unit: "messages", reads: ["#cs-escalations", "#incidents", "#deal-desk"], extra: 15, est: 84 },
-  notion: { tag: "Policies & playbooks", count: "284", unit: "pages", reads: ["Policy Library", "Support Playbook", "Ops Runbooks"], extra: 3, est: 52 },
-  github: { tag: "Code reviews & runbooks", count: "1,120", unit: "PRs & issues", reads: ["payments-core", "dispute-engine"], extra: 1, est: 37 },
-  jira: { tag: "Tickets & incidents", count: "640", unit: "tickets", reads: ["Incident Response", "Platform"], extra: 0, est: 44 },
-  zendesk: { tag: "Support patterns", count: "2,980", unit: "tickets", reads: ["Escalations", "Disputes", "Refunds"], extra: 1, est: 61 },
-  google_drive: { tag: "Docs, sheets & slides", count: "1,540", unit: "files", reads: ["Product Docs", "Finance", "People Ops"], extra: 4, est: 48 },
-  gmail: { tag: "Threads & commitments", count: "820", unit: "threads", reads: ["Escalations", "Vendors", "Approvals"], extra: 2, est: 23 },
-};
+import type { SetupStep, UseCase } from "@/features/onboarding/types";
 
 /** Two-pane setup stepper definition. */
 export const SETUP_STEPS: SetupStep[] = [
@@ -65,6 +26,3 @@ export const USE_CASES: UseCase[] = [
   { id: "eng", t: "Engineering", d: "Onboarding, code review, on-call", icon: "skills" },
   { id: "agents", t: "Internal Agents", d: "Tools that act on your behalf", icon: "sparkles" },
 ];
-
-/** Configure step: time-range options. */
-export const TIME_RANGES: string[] = ["30 days", "90 days", "6 months", "All time"];

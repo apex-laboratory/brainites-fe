@@ -1,4 +1,4 @@
-import { AppIcon } from "@/components/shared/AppIcon";
+import { AppIcon, ErrorState, Skeleton } from "@/components/shared";
 import { SectionLabel } from "@/components/shared/SectionLabel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,12 +23,18 @@ export interface StepIntegrateProps {
  */
 export function StepIntegrate({ onBack, onDone }: StepIntegrateProps) {
   const {
+    isLoading,
+    isError,
+    error,
+    retry,
     endpoint,
     apiKey,
     maskedKey,
+    workspaceName,
     scopes,
     systemPrompt,
     clientConfig,
+    guides,
     revealed,
     toggleReveal,
     copy,
@@ -61,15 +67,29 @@ export function StepIntegrate({ onBack, onDone }: StepIntegrateProps) {
             <Badge variant="green">Live</Badge>
           </div>
           <h1 className="text-[28px] font-bold tracking-tight text-ink md:text-[34px]">
-            Plug {BRAND.workspace} into your agents
+            Plug {workspaceName} into your agents
           </h1>
           <p className="mt-3 max-w-[560px] text-[15px] leading-[1.5] text-ink-3 md:text-base">
             Your brain is live. Point any agent, MCP client, or service at the
-            endpoint below to query {BRAND.workspace}'s decisions, policies, and
+            endpoint below to query {workspaceName}'s decisions, policies, and
             runbooks with source-backed answers.
           </p>
         </div>
 
+        {isError ? (
+          <ErrorState
+            className="mt-8"
+            error={error}
+            onRetry={retry}
+            title="Couldn't prepare your agent credentials"
+          />
+        ) : isLoading || !endpoint || !apiKey ? (
+          <div className="mt-8 flex flex-col gap-3.5">
+            <Skeleton className="h-[132px] rounded-2xl" />
+            <Skeleton className="h-[168px] rounded-2xl" />
+            <Skeleton className="h-[220px] rounded-2xl" />
+          </div>
+        ) : (
         <div className="mt-8 flex flex-col gap-3.5 motion-safe:animate-fade-up">
           {/* Endpoint */}
           <Card className="p-6">
@@ -158,10 +178,12 @@ export function StepIntegrate({ onBack, onDone }: StepIntegrateProps) {
               pre-filled with your endpoint and key.
             </p>
             <AgentSetup
+              guides={guides}
               onCopy={(value, label) => copy(value, label ?? "Copied")}
             />
           </Card>
         </div>
+        )}
       </div>
     </OnboardingShell>
   );

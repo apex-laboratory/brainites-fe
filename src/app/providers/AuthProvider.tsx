@@ -68,6 +68,12 @@ type AuthContextValue = {
   ) => Promise<void>;
   /** Revoke the session and return to the auth screen. */
   logout: () => void;
+  /**
+   * Adopt a freshly created workspace mid-onboarding: swap in the
+   * workspace-scoped access token and record the workspace so
+   * `useWorkspaceId()` / `RequireWorkspace` resolve. Does NOT navigate.
+   */
+  activateWorkspace: (workspace: WorkspaceSummary, accessToken: string) => void;
   /** Onboarding finished → dashboard. */
   completeOnboarding: () => void;
 };
@@ -198,6 +204,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     navigate(ROUTES.auth);
   }, [clearSession, navigate]);
 
+  const activateWorkspace = useCallback(
+    (workspace: WorkspaceSummary, accessToken: string) => {
+      // `POST /workspaces` returns a new access token scoped to the workspace;
+      // the refresh token is unchanged, so only the access token is swapped.
+      setTokens({ accessToken });
+      setSnapshot((prev) => (prev ? { ...prev, workspace } : prev));
+      setStatus("authenticated");
+    },
+    [setSnapshot],
+  );
+
   const completeOnboarding = useCallback(() => {
     navigate(ROUTES.dashboard);
   }, [navigate]);
@@ -214,6 +231,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithOAuth,
       completeOAuth,
       logout,
+      activateWorkspace,
       completeOnboarding,
     }),
     [
@@ -224,6 +242,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signInWithOAuth,
       completeOAuth,
       logout,
+      activateWorkspace,
       completeOnboarding,
     ],
   );

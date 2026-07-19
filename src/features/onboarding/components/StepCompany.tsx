@@ -17,6 +17,8 @@ export interface StepCompanyProps {
   setCompany: (patch: Partial<CompanyForm>) => void;
   onBack: () => void;
   onNext: () => void;
+  /** True while the workspace is being created — disables Continue. */
+  submitting?: boolean;
 }
 
 /** Company-setup step: name, team size, and primary use case. */
@@ -25,6 +27,7 @@ export function StepCompany({
   setCompany,
   onBack,
   onNext,
+  submitting = false,
 }: StepCompanyProps) {
   return (
     <OnboardingFrame
@@ -33,7 +36,8 @@ export function StepCompany({
       sub="We tailor your brain to how your team actually works."
       onBack={onBack}
       onNext={onNext}
-      canNext={Boolean(company.company && company.useCase)}
+      canNext={Boolean(company.company && company.useCase) && !submitting}
+      nextLabel={submitting ? "Creating workspace…" : "Continue"}
     >
       <div className="flex max-w-[620px] flex-col gap-[26px]">
         <div className="flex flex-col gap-2.5">
