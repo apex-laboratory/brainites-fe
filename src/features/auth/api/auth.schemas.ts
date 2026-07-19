@@ -16,7 +16,10 @@ export const WorkspaceSummarySchema = z.object({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
-  plan: z.string(),
+  // The session/onboarding workspace payload is lean — it does NOT carry `plan`
+  // (only the Settings/Dashboard workspace endpoints do). Optional so a valid
+  // session response isn't rejected at the validation boundary.
+  plan: z.string().optional(),
 });
 export type WorkspaceSummary = z.infer<typeof WorkspaceSummarySchema>;
 
