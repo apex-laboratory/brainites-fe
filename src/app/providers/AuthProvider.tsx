@@ -15,6 +15,8 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ROUTES } from "@/constants/routes";
 import {
   authApi,
+  type AuthRole,
+  type MeWorkspace,
   type OAuthMode,
   type OAuthProvider,
   type Session,
@@ -25,25 +27,37 @@ import {
   clearTokens,
   getRefreshToken,
   hasSession,
+  isApiError,
   onSessionExpired,
   queryClient,
   refreshTokens,
   setTokens,
 } from "@/lib/api";
 
+/** A 401 during rehydrate means the refresh token is dead — sign out. Any other
+ * failure (5xx, network) is transient and must not evict a live session. */
+function isUnauthorized(err: unknown): boolean {
+  return isApiError(err) && err.status === 401;
+}
+
 /** Lifecycle of the session, drives route guards and loading gates. */
 export type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
 /**
  * The display-only slice of the session persisted to localStorage so the shell
- * can render the user/workspace across reloads. It carries NO tokens — the
- * access token lives in memory and the refresh token is stored separately by
- * the token layer. Until the BE ships a `/auth/me`, this snapshot is how we
- * rehydrate identity after a refresh (see BE_AUTH_QUESTIONS.md).
+ * can paint the user/workspace instantly on reload, before the network settles.
+ * It carries NO tokens — the access token lives in memory and the refresh token
+ * is stored separately by the token layer.
+ *
+ * This is a *cache*, not the source of truth: on reload we refresh the access
+ * token and then call `GET /auth/me` for authoritative identity, overwriting the
+ * snapshot (see BE_AUTH_QUESTIONS.md §3). The snapshot is only trusted as a
+ * fallback when `/auth/me` is unreachable but the refresh itself succeeded.
  */
 interface SessionSnapshot {
   user: User;
-  workspace: WorkspaceSummary | null;
+  workspace: MeWorkspace | null;
+  role: AuthRole | null;
 }
 
 const SESSION_SNAPSHOT_KEY = "brainite.session";
@@ -51,8 +65,11 @@ const SESSION_SNAPSHOT_KEY = "brainite.session";
 type AuthContextValue = {
   status: AuthStatus;
   user: User | null;
-  workspace: WorkspaceSummary | null;
+  workspace: MeWorkspace | null;
   workspaceId: string | null;
+  /** The user's role in the active workspace; `null` before onboarding or
+   * until the first `/auth/me` on reload resolves it. */
+  role: AuthRole | null;
   isAuthenticated: boolean;
   /** Passwordless email sign-up → routes per the server's `nextStep`. */
   signup: (email: string) => Promise<void>;
@@ -101,7 +118,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         accessToken: session.accessToken,
         refreshToken: session.refreshToken,
       });
-      setSnapshot({ user: session.user, workspace: session.workspace });
+      // The signin/signup/oauth session carries no `role` — it's resolved by
+      // `/auth/me` on the next reload. Seed it `null` until then.
+      setSnapshot({
+        user: session.user,
+        workspace: session.workspace,
+        role: null,
+      });
       setStatus("authenticated");
     },
     [setSnapshot],
@@ -115,8 +138,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [setSnapshot]);
 
   // ── Rehydrate on mount ────────────────────────────────────────────────────
-  // If a refresh token survives in storage, silently mint a fresh access token
-  // and resume the persisted identity. Runs once.
+  // If a refresh token survives in storage, silently mint a fresh access token,
+  // then pull authoritative identity from `GET /auth/me` and overwrite the
+  // cached snapshot. Runs once.
   const didHydrate = useRef(false);
   useEffect(() => {
     if (didHydrate.current) return;
@@ -125,11 +149,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     if (hasSession() && snapshot) {
       refreshTokens()
-        .then(() => active && setStatus("authenticated"))
-        .catch(() => {
-          // Network failure vs. dead token: `onSessionExpired` already handles
-          // the token-death path; here we just fall back to unauthenticated.
-          if (active) setStatus("unauthenticated");
+        .then(() => authApi.me())
+        .then((me) => {
+          if (!active) return;
+          // `/auth/me` is the source of truth — replace the cached snapshot.
+          setSnapshot({ user: me.user, workspace: me.workspace, role: me.role });
+          setStatus("authenticated");
+        })
+        .catch((err) => {
+          if (!active) return;
+          // A dead/expired refresh token surfaces as a 401 and `refreshTokens`
+          // has already cleared state + emitted `onSessionExpired`; fall through
+          // to unauthenticated. But if the *refresh* succeeded and only `/auth/me`
+          // failed (transient 5xx / offline), keep the cached snapshot so a blip
+          // doesn't sign the user out.
+          if (isUnauthorized(err) || !hasSession()) {
+            setStatus("unauthenticated");
+          } else {
+            setStatus("authenticated");
+          }
         });
     } else {
       if (hasSession() || snapshot) clearSession();
@@ -225,6 +263,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user: snapshot?.user ?? null,
       workspace: snapshot?.workspace ?? null,
       workspaceId: snapshot?.workspace?.id ?? null,
+      role: snapshot?.role ?? null,
       isAuthenticated: status === "authenticated",
       signup,
       signin,

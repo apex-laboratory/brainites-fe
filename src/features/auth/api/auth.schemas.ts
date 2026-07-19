@@ -24,6 +24,31 @@ export type WorkspaceSummary = z.infer<typeof WorkspaceSummarySchema>;
 export const NextStepSchema = z.enum(["onboarding", "dashboard"]);
 export type NextStep = z.infer<typeof NextStepSchema>;
 
+/** The caller's role in the active workspace; `null` before onboarding. */
+export const AuthRoleSchema = z.enum(["viewer", "editor", "admin"]);
+export type AuthRole = z.infer<typeof AuthRoleSchema>;
+
+/**
+ * `GET /auth/me` → authoritative session identity on reload. Note the workspace
+ * here is leaner than `WorkspaceSummarySchema` (no `plan`), and `role` is only
+ * ever present on this endpoint — signin/signup/oauth sessions don't carry it.
+ * `workspace`/`role` are `null` before onboarding (`nextStep: "onboarding"`).
+ */
+export const MeWorkspaceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+});
+export type MeWorkspace = z.infer<typeof MeWorkspaceSchema>;
+
+export const MeSchema = z.object({
+  user: UserSchema,
+  workspace: MeWorkspaceSchema.nullable(),
+  role: AuthRoleSchema.nullable(),
+  nextStep: NextStepSchema,
+});
+export type Me = z.infer<typeof MeSchema>;
+
 /** The shared session payload returned by signup / signin / oauth callback. */
 export const SessionSchema = z.object({
   user: UserSchema,

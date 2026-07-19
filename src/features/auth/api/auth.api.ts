@@ -3,8 +3,10 @@ import { z } from "zod";
 import { api } from "@/lib/api";
 
 import {
+  MeSchema,
   OAuthStartSchema,
   SessionSchema,
+  type Me,
   type NextStep,
   type OAuthStart,
   type Session,
@@ -27,6 +29,13 @@ export const authApi = {
 
   signin: (email: string): Promise<Session> =>
     api.post("/auth/signin", SessionSchema, { email }, { skipAuth: true }),
+
+  /**
+   * Rehydrate authoritative identity from the access token on reload. Requires
+   * a valid Bearer JWT (not `skipAuth`), so it will transparently refresh once
+   * if the in-memory access token has expired. See BE_AUTH_QUESTIONS.md §3.
+   */
+  me: (): Promise<Me> => api.get("/auth/me", MeSchema),
 
   /** Get the provider consent URL to redirect the browser to. */
   oauthStart: (
@@ -65,4 +74,4 @@ export const authApi = {
     ),
 };
 
-export type { NextStep, Session, OAuthStart };
+export type { Me, NextStep, Session, OAuthStart };
