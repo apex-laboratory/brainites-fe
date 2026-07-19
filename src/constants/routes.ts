@@ -1,8 +1,10 @@
 /** Centralized route paths. Keep these in sync with the router. */
 export const ROUTES = {
   auth: "/auth",
-  /** OAuth SSO redirect target. `:provider` ∈ google | github. */
-  authCallback: "/auth/callback/:provider",
+  /** OAuth SSO redirect target — a single provider-less page (the BE registers
+   * exactly this as the redirect_uri). The provider is recalled from
+   * sessionStorage, not the URL. */
+  authCallback: "/auth/callback",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
   chat: "/dashboard/chat",

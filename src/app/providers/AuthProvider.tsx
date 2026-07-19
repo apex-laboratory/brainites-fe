@@ -15,6 +15,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ROUTES } from "@/constants/routes";
 import {
   authApi,
+  rememberOAuthProvider,
   type AuthRole,
   type MeWorkspace,
   type OAuthMode,
@@ -25,7 +26,6 @@ import {
 } from "@/features/auth/api";
 import {
   clearTokens,
-  getRefreshToken,
   hasSession,
   isApiError,
   onSessionExpired,
@@ -114,10 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const applySession = useCallback(
     (session: Session) => {
-      setTokens({
-        accessToken: session.accessToken,
-        refreshToken: session.refreshToken,
-      });
+      setTokens(session.accessToken);
       // The signin/signup/oauth session carries no `role` — it's resolved by
       // `/auth/me` on the next reload. Seed it `null` until then.
       setSnapshot({
@@ -221,6 +218,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithOAuth = useCallback(
     async (provider: OAuthProvider, mode: OAuthMode = "signin") => {
       const { authorizationUrl } = await authApi.oauthStart(provider, mode);
+      // The BE redirect_uri is the provider-less `/auth/callback` page, so stash
+      // which provider we're using for the callback to read back on return.
+      rememberOAuthProvider(provider);
       window.location.href = authorizationUrl; // full-page provider redirect
     },
     [],
@@ -237,7 +237,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     // Fire-and-forget: logout must succeed locally even if the network is down.
-    void authApi.logout(getRefreshToken()).catch(() => {});
+    void authApi.logout().catch(() => {});
     clearSession();
     navigate(ROUTES.auth);
   }, [clearSession, navigate]);
@@ -245,8 +245,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const activateWorkspace = useCallback(
     (workspace: WorkspaceSummary, accessToken: string) => {
       // `POST /workspaces` returns a new access token scoped to the workspace;
-      // the refresh token is unchanged, so only the access token is swapped.
-      setTokens({ accessToken });
+      // the refresh cookie is unchanged, so only the access token is swapped.
+      setTokens(accessToken);
       setSnapshot((prev) => (prev ? { ...prev, workspace } : prev));
       setStatus("authenticated");
     },

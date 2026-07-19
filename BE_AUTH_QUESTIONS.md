@@ -1,5 +1,11 @@
 # Auth Integration — Open Questions for the Backend
 
+> **Status: RESOLVED.** All items below have been answered by the backend and
+> the answers are captured in [`AUTH_CONTRACT.md`](./AUTH_CONTRACT.md), which is
+> now the source of truth. The FE has been updated to match (see the per-item
+> **Resolved** notes and the updated assumptions table at the bottom). This file
+> is kept for history.
+
 Raised while wiring the **auth flow** (`INTEGRATIONS.md` §Auth) into the frontend.
 Each item is something the FE either had to assume or work around; confirming or
 fixing them on the BE side lets us delete FE guesswork.
@@ -144,14 +150,17 @@ an oversight.
 
 ---
 
-## Summary of FE assumptions currently in code
+## Summary of FE behaviour in code (post-resolution)
 
-| Area | FE assumption | File |
+Reflects the shipped contract; see [`AUTH_CONTRACT.md`](./AUTH_CONTRACT.md).
+
+| Area | FE behaviour | File |
 | --- | --- | --- |
-| Refresh/logout body key | `{ refreshToken }` (camelCase) | `lib/api/tokens.ts`, `features/auth/api/auth.api.ts` |
-| Refresh response | `{ data: { accessToken, refreshToken } }` | `lib/api/tokens.ts` |
+| Refresh/logout body | **empty body**; refresh cookie carries the token | `lib/api/tokens.ts`, `features/auth/api/auth.api.ts` |
+| Refresh response | `{ data: { accessToken, refreshToken } }` (only `accessToken` consumed) | `lib/api/tokens.ts` |
 | Session shape | `{ user, workspace, accessToken, refreshToken, nextStep }` | `features/auth/api/auth.schemas.ts` |
-| Identity on reload | trust localStorage snapshot after silent refresh | `app/providers/AuthProvider.tsx` |
-| OAuth landing | `{FRONTEND_URL}/auth/callback/{provider}?code&state` | `features/auth/pages/OAuthCallbackPage.tsx` |
+| Refresh token storage | **not stored by JS** — httpOnly cookie only; a non-secret `brainite.hasSession` marker gates reload | `lib/api/tokens.ts` |
+| Identity on reload | silent refresh → `GET /auth/me` (authoritative); snapshot is a paint-only fallback | `app/providers/AuthProvider.tsx` |
+| OAuth landing | `{FRONTEND_URL}/auth/callback?code&state` (single page); provider from sessionStorage | `features/auth/pages/OAuthCallbackPage.tsx` |
 | Error parsing | both `{ error }` and `{ detail }` shapes | `lib/api/client.ts` |
 | Cookies | `credentials: "include"` on all requests | `lib/api/client.ts` |

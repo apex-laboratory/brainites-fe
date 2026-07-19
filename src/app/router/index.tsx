@@ -29,7 +29,7 @@ function SourcesCallbackRedirect() {
 /**
  * Application routes. Auth state gates the tree:
  *  - `/auth` is guest-only (authenticated users are bounced home).
- *  - `/auth/callback/:provider` is the OAuth redirect target (public).
+ *  - `/auth/callback` is the OAuth redirect target (public, provider-less).
  *  - `/onboarding` requires a session.
  *  - `/dashboard/*` requires a session **and** a workspace: every data endpoint
  *    is workspace-scoped, so `useWorkspaceId()` must never see a null id.
@@ -43,7 +43,7 @@ export function AppRouter() {
         <Route element={<RequireGuest />}>
           <Route path="/auth" element={<AuthPage />} />
         </Route>
-        <Route path="/auth/callback/:provider" element={<OAuthCallbackPage />} />
+        <Route path="/auth/callback" element={<OAuthCallbackPage />} />
       </Route>
 
       <Route element={<RequireAuth />}>

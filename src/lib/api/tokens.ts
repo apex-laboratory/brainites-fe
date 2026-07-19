@@ -2,11 +2,14 @@
  * Token store + refresh coordination.
  *
  * - The **access token** lives in memory only (never persisted) — it is short
- *   lived (~15 min) and re-minted from the refresh token on reload.
- * - The **refresh token** is persisted to localStorage as an MVP tradeoff. The
- *   backend also sets it as an httpOnly cookie scoped to `/api/v1/auth`; once we
- *   run same-site behind a shared domain we can drop the localStorage copy and
- *   rely on the cookie (see BE_AUTH_QUESTIONS.md).
+ *   lived (~15 min) and re-minted on reload via the refresh cookie.
+ * - The **refresh token** is NOT stored by JS at all. The backend holds it in an
+ *   httpOnly cookie scoped to `/api/v1/auth` that JS can't read; `/auth/refresh`
+ *   and `/auth/logout` carry it automatically via `credentials: "include"` with
+ *   an empty request body (see AUTH_CONTRACT.md §1–2).
+ * - A tiny non-secret **session marker** in localStorage records only "a session
+ *   may be resumable", so on reload we know whether to attempt a silent refresh
+ *   (and can paint a loading gate) rather than flashing the signed-out screen.
  * - `refreshTokens()` is **single-flight**: concurrent 401s share one in-flight
  *   refresh instead of stampeding `/auth/refresh` (which rotates the token and
  *   would revoke the whole family on a detected "reuse").
@@ -15,7 +18,8 @@
 import { API_BASE_URL } from "./config";
 import { ApiError } from "./errors";
 
-const REFRESH_TOKEN_KEY = "brainite.refreshToken";
+/** Non-secret hint that a refresh cookie may exist; never the token itself. */
+const SESSION_MARKER_KEY = "brainite.hasSession";
 
 let accessToken: string | null = null;
 
@@ -44,42 +48,41 @@ export function setAccessToken(token: string | null): void {
   accessToken = token;
 }
 
-// ── Refresh token (localStorage) ────────────────────────────────────────────
-export function getRefreshToken(): string | null {
+// ── Session marker (localStorage) ───────────────────────────────────────────
+function setSessionMarker(present: boolean): void {
   try {
-    return window.localStorage.getItem(REFRESH_TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function setRefreshToken(token: string | null): void {
-  try {
-    if (token) window.localStorage.setItem(REFRESH_TOKEN_KEY, token);
-    else window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+    if (present) window.localStorage.setItem(SESSION_MARKER_KEY, "1");
+    else window.localStorage.removeItem(SESSION_MARKER_KEY);
   } catch {
     /* ignore write failures (private mode, quota) */
   }
 }
 
-/** Persist a freshly issued token pair after signin / signup / refresh. */
-export function setTokens(tokens: {
-  accessToken: string;
-  refreshToken?: string | null;
-}): void {
-  setAccessToken(tokens.accessToken);
-  if (tokens.refreshToken !== undefined) setRefreshToken(tokens.refreshToken);
+/**
+ * Adopt a freshly issued access token (from signin / signup / refresh) and mark
+ * the session resumable. The refresh token is never passed here — it lives only
+ * in the httpOnly cookie the backend set alongside this access token.
+ */
+export function setTokens(accessToken: string): void {
+  setAccessToken(accessToken);
+  setSessionMarker(true);
 }
 
-/** Wipe both tokens. Call on logout and on unrecoverable refresh failure. */
+/** Wipe the in-memory token and the marker. Call on logout and on unrecoverable
+ * refresh failure. The httpOnly cookie is cleared server-side by `/auth/logout`
+ * / a failed rotation — JS can't touch it. */
 export function clearTokens(): void {
   setAccessToken(null);
-  setRefreshToken(null);
+  setSessionMarker(false);
 }
 
-/** True when we hold a refresh token — i.e. a session may be resumable. */
+/** True when a refresh cookie may still exist — i.e. a session may be resumable. */
 export function hasSession(): boolean {
-  return getRefreshToken() !== null;
+  try {
+    return window.localStorage.getItem(SESSION_MARKER_KEY) !== null;
+  } catch {
+    return false;
+  }
 }
 
 // ── Single-flight refresh ───────────────────────────────────────────────────
@@ -102,8 +105,8 @@ export function refreshTokens(): Promise<string> {
 }
 
 async function doRefresh(): Promise<string> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
+  // No marker → no cookie to spend; short-circuit instead of a guaranteed 401.
+  if (!hasSession()) {
     clearTokens();
     emitSessionExpired();
     throw new ApiError("unauthorized", "Session expired", 401);
@@ -113,10 +116,9 @@ async function doRefresh(): Promise<string> {
   try {
     res = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Include the cookie-based refresh token too, if the BE set one.
+      // Empty body: the httpOnly refresh cookie carries the token. `credentials:
+      // "include"` sends it; the BE rotates the pair and re-sets the cookie.
       credentials: "include",
-      body: JSON.stringify({ refreshToken }),
       signal: AbortSignal.timeout(10_000),
     });
   } catch {
@@ -141,6 +143,8 @@ async function doRefresh(): Promise<string> {
     throw new ApiError("unauthorized", "Malformed refresh response", res.status);
   }
 
-  setTokens({ accessToken: next.accessToken, refreshToken: next.refreshToken });
+  // `refreshToken` in the body is ignored — the rotated token lives in the fresh
+  // cookie the BE just set. We only adopt the new access token.
+  setTokens(next.accessToken);
   return next.accessToken;
 }

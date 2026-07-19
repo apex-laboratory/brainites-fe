@@ -1,23 +1,22 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
 import { AppLogo } from "@/components/shared/AppLogo";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
-import type { OAuthProvider } from "@/features/auth/api";
+import { clearOAuthProvider, recallOAuthProvider } from "@/features/auth/api";
 import { isApiError } from "@/lib/api";
 
-const SUPPORTED: OAuthProvider[] = ["google", "github"];
-
 /**
- * Landing page for the provider redirect after OAuth consent. Reads `code` +
- * `state` from the URL, exchanges them for a session via the backend, then the
+ * Landing page for the provider redirect after OAuth consent. The BE registers a
+ * single provider-less `/auth/callback` redirect_uri, so the provider isn't in
+ * the URL — it's recalled from sessionStorage (stashed when the flow started).
+ * Reads `code` + `state` from the URL, exchanges them for a session, then the
  * AuthProvider routes onward per `nextStep`. Renders a clear, actionable error
  * if the provider declined or the exchange fails — never a blank screen.
  */
 export function OAuthCallbackPage() {
-  const { provider } = useParams<{ provider: string }>();
   const [params] = useSearchParams();
   const { completeOAuth } = useAuth();
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +26,8 @@ export function OAuthCallbackPage() {
     if (ran.current) return;
     ran.current = true;
 
+    const provider = recallOAuthProvider();
+    clearOAuthProvider(); // single-use: consume it whatever the outcome
     const providerErr = params.get("error");
     const code = params.get("code");
     const state = params.get("state");
@@ -39,8 +40,8 @@ export function OAuthCallbackPage() {
       );
       return;
     }
-    if (!provider || !SUPPORTED.includes(provider as OAuthProvider)) {
-      setError("Unsupported sign-in provider.");
+    if (!provider) {
+      setError("We couldn't tell which provider you used. Please try signing in again.");
       return;
     }
     if (!code || !state) {
@@ -48,14 +49,14 @@ export function OAuthCallbackPage() {
       return;
     }
 
-    completeOAuth(provider as OAuthProvider, code, state).catch((err) => {
+    completeOAuth(provider, code, state).catch((err) => {
       setError(
         isApiError(err)
           ? "We couldn't complete sign-in. The link may have expired — please try again."
           : "Something went wrong completing sign-in.",
       );
     });
-  }, [provider, params, completeOAuth]);
+  }, [params, completeOAuth]);
 
   return (
     <div className="grid min-h-full w-full place-items-center bg-ivory p-6">

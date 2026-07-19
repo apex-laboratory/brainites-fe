@@ -5,7 +5,6 @@ export { queryClient } from "./query-client";
 export {
   clearTokens,
   getAccessToken,
-  getRefreshToken,
   hasSession,
   onSessionExpired,
   refreshTokens,

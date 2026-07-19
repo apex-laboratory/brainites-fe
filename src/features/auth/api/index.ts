@@ -1,4 +1,12 @@
-export { authApi, type Me, type OAuthMode, type OAuthProvider } from "./auth.api";
+export {
+  authApi,
+  clearOAuthProvider,
+  recallOAuthProvider,
+  rememberOAuthProvider,
+  type Me,
+  type OAuthMode,
+  type OAuthProvider,
+} from "./auth.api";
 export {
   EmailSchema,
   MeSchema,

@@ -17,6 +17,39 @@ export type OAuthProvider = "google" | "github";
 export type OAuthMode = "signin" | "signup";
 
 /**
+ * The provider redirect_uri the BE registers is a single FE page —
+ * `{FRONTEND_URL}/auth/callback` (no provider in the path). So the callback page
+ * can't learn the provider from the URL; we stash it in sessionStorage when the
+ * flow starts and read it back on return. See AUTH_CONTRACT.md §4.
+ */
+const OAUTH_PROVIDER_KEY = "brainite.oauthProvider";
+
+export function rememberOAuthProvider(provider: OAuthProvider): void {
+  try {
+    window.sessionStorage.setItem(OAUTH_PROVIDER_KEY, provider);
+  } catch {
+    /* ignore write failures (private mode, quota) */
+  }
+}
+
+export function recallOAuthProvider(): OAuthProvider | null {
+  try {
+    const v = window.sessionStorage.getItem(OAUTH_PROVIDER_KEY);
+    return v === "google" || v === "github" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearOAuthProvider(): void {
+  try {
+    window.sessionStorage.removeItem(OAUTH_PROVIDER_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
  * Auth endpoint functions. All are `skipAuth` — they mint or rotate the token
  * themselves and must not carry (or retry with) a Bearer header.
  *
@@ -61,17 +94,13 @@ export const authApi = {
     ),
 
   /**
-   * Revoke the refresh token server-side. Fire-and-forget from the caller's
-   * perspective — logout must succeed locally even if this fails. Returns void
-   * (204).
+   * Revoke the refresh token server-side. The token rides the httpOnly cookie
+   * (`credentials: "include"` is on every request), so the body is empty.
+   * Fire-and-forget from the caller's perspective — logout must succeed locally
+   * even if this fails. Idempotent; returns void (204).
    */
-  logout: (refreshToken: string | null): Promise<void> =>
-    api.post(
-      "/auth/logout",
-      z.void(),
-      refreshToken ? { refreshToken } : {},
-      { skipAuth: true },
-    ),
+  logout: (): Promise<void> =>
+    api.post("/auth/logout", z.void(), undefined, { skipAuth: true }),
 };
 
 export type { Me, NextStep, Session, OAuthStart };
