@@ -1,4 +1,4 @@
-import { AppIcon, Meter, PageHeader } from "@/components/shared";
+import { AppIcon, ErrorState, Meter, PageHeader, Skeleton } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
@@ -7,7 +7,8 @@ import { useReviews } from "../hooks/useReviews";
 
 /** Review queue triage screen (prototype `ReviewsPage`). */
 export function ReviewsPage() {
-  const { queue, total, done, approve, reject } = useReviews();
+  const { queue, total, done, approve, reject, isPending, isError, error, refetch } =
+    useReviews();
   const progress = total === 0 ? 100 : (done / total) * 100;
 
   return (
@@ -16,10 +17,29 @@ export function ReviewsPage() {
         label="Operational · triage"
         title="Review queue"
         sub="Proposed changes the brain detected. Approve to merge into company logic."
-        right={<Badge variant="amber">{queue.length} pending</Badge>}
+        right={
+          isPending || isError ? undefined : (
+            <Badge variant="amber">{queue.length} pending</Badge>
+          )
+        }
       />
 
       <div className="mx-auto max-w-[780px] px-6 pb-14 pt-6 md:px-10">
+        {isError ? (
+          <ErrorState
+            error={error}
+            onRetry={() => refetch()}
+            title="Couldn't load the review queue"
+          />
+        ) : isPending ? (
+          <div className="flex flex-col gap-4">
+            <Skeleton className="h-[68px] rounded-2xl" />
+            {Array.from({ length: 3 }, (_, i) => (
+              <Skeleton key={i} className="h-[220px] rounded-2xl" />
+            ))}
+          </div>
+        ) : (
+          <>
         {/* progress strip */}
         <Card className="mb-[18px] flex items-center gap-[18px] px-5 py-4">
           <div className="flex-1">
@@ -65,6 +85,8 @@ export function ReviewsPage() {
             ))
           )}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

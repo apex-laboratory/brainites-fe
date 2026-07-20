@@ -36,10 +36,12 @@ export function ReviewCard({ review, onResolve }: ReviewCardProps) {
       <div className="flex flex-col gap-4 p-6">
         <div className="flex items-center gap-2.5">
           <Badge variant="accent">{review.kind}</Badge>
-          <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
-            <SourceIcon id={review.src} size={14} branded />
-            {review.where}
-          </span>
+          {(review.src || review.where) && (
+            <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
+              {review.src && <SourceIcon id={review.src} size={14} branded />}
+              {review.where}
+            </span>
+          )}
           <span className="ml-auto">
             <ConfidenceMeter value={review.conf} />
           </span>

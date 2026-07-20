@@ -14,7 +14,7 @@ import {
 } from "@/features/dashboard/hooks";
 import { BrainChatProvider, useBrainChat } from "@/features/brain-chat";
 import { useDisclosure } from "@/hooks/useDisclosure";
-import { REVIEWS } from "@/features/reviews";
+import { useReviewCount } from "@/features/reviews";
 import { ROUTES } from "@/constants/routes";
 
 /**
@@ -48,7 +48,7 @@ export function DashboardLayout() {
     closeCommand: commandPalette.close,
   });
 
-  const reviewCount = REVIEWS.length;
+  const reviewCount = useReviewCount();
 
   return (
     <BrainChatProvider value={chat}>
