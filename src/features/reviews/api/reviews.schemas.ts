@@ -18,7 +18,9 @@ export const ReviewSchema = z.object({
   id: z.string(),
   title: z.string(),
   kind: ReviewKindSchema,
-  status: ReviewStatusSchema,
+  // Backend types this as a bare `str`; fall back rather than blank the queue on
+  // an unexpected value.
+  status: ReviewStatusSchema.catch("pending"),
   verdict: z.string().nullish(),
   sourceProvider: z.string().nullish(),
   sourceLocation: z.string().nullish(),
