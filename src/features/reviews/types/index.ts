@@ -3,7 +3,8 @@ import type { SourceId } from "@/types/common";
 export type Review = {
   id: string;
   title: string;
-  src: SourceId;
+  /** Origin provider, or `null` when the review spans/omits a single source. */
+  src: SourceId | null;
   /** Origin context (channel · message count, PR, view…). */
   where: string;
   /** What kind of change this proposes (e.g. "Policy change"). */
