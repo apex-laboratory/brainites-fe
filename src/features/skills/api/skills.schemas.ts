@@ -1,0 +1,26 @@
+import { z } from "zod";
+
+/**
+ * Zod schemas for the Skills API (`/api/v1/skills`), mirroring the backend
+ * `SkillSearchResult` / `SkillOut` / `SkillVersionOut` models (Phase 5, PRD §14).
+ * Responses are camelCase. Reads require `brain:query` (an API key) or role ≥
+ * viewer (a dashboard JWT); export is admin-only.
+ *
+ * `exceptionsBlock` / `actions` are typed as bare lists on the backend with no
+ * committed element shape — kept as `unknown[]` here so a shape change can't
+ * blank the screen.
+ */
+
+/** One semantic-search hit. `similarity` is cosine similarity (0–1). */
+export const SkillSearchResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+  baseLogic: z.string(),
+  exceptionsBlock: z.array(z.unknown()).default([]),
+  sourceAuthority: z.string().nullish(),
+  similarity: z.number(),
+});
+export type SkillSearchResult = z.infer<typeof SkillSearchResultSchema>;
+
+export const SkillSearchListSchema = z.array(SkillSearchResultSchema);
