@@ -43,3 +43,16 @@ export const SkillSchema = z.object({
   updatedAt: IsoDateTimeSchema.nullish(),
 });
 export type SkillOut = z.infer<typeof SkillSchema>;
+
+/** One historical version (`GET /skills/{id}/versions`) from `skill_versions`. */
+export const SkillVersionSchema = z.object({
+  version: z.string(),
+  baseLogic: z.string().nullish(),
+  exceptionsBlock: z.array(z.unknown()).default([]),
+  confidence: z.number().nullish(),
+  changeType: z.string().nullish(),
+  createdAt: IsoDateTimeSchema.nullish(),
+});
+export type SkillVersionOut = z.infer<typeof SkillVersionSchema>;
+
+export const SkillVersionListSchema = z.array(SkillVersionSchema);

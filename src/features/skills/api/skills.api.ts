@@ -3,8 +3,10 @@ import { api } from "@/lib/api";
 import {
   SkillSchema,
   SkillSearchListSchema,
+  SkillVersionListSchema,
   type SkillOut,
   type SkillSearchResult,
+  type SkillVersionOut,
 } from "./skills.schemas";
 
 export type SkillSearchParams = {
@@ -25,6 +27,9 @@ export const skillsApi = {
 
   get: (skillId: string): Promise<SkillOut> =>
     api.get(`/skills/${skillId}`, SkillSchema),
+
+  versions: (skillId: string): Promise<SkillVersionOut[]> =>
+    api.get(`/skills/${skillId}/versions`, SkillVersionListSchema),
 };
 
 /** Query keys for the skills feature (workspace-keyed so a switch can't serve stale). */
@@ -34,4 +39,6 @@ export const skillKeys = {
     ["skills", workspaceId, "search", params] as const,
   detail: (workspaceId: string, skillId: string) =>
     ["skills", workspaceId, "detail", skillId] as const,
+  versions: (workspaceId: string, skillId: string) =>
+    ["skills", workspaceId, "versions", skillId] as const,
 };
