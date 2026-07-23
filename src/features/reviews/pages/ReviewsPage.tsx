@@ -14,6 +14,7 @@ export function ReviewsPage() {
     approve,
     reject,
     write,
+    resolveContradiction,
     isPending,
     isError,
     error,
@@ -92,6 +93,7 @@ export function ReviewsPage() {
                   verdict === "approve" ? approve(id) : reject(id)
                 }
                 onWrite={write}
+                onResolveContradiction={resolveContradiction}
               />
             ))
           )}

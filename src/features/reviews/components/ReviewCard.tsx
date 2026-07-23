@@ -8,7 +8,7 @@ import { cn } from "@/utils/cn";
 
 import type { Review } from "../types";
 import type { ReviewVerdict } from "../hooks/useReviews";
-import type { WriteReviewBody } from "../api";
+import type { ResolveContradictionBody, WriteReviewBody } from "../api";
 import { ConfidenceMeter } from "./ConfidenceMeter";
 import { WriteCorrectionDialog } from "./WriteCorrectionDialog";
 
@@ -19,10 +19,17 @@ export interface ReviewCardProps {
   review: Review;
   onResolve: (id: string, verdict: ReviewVerdict) => void;
   onWrite: (id: string, body: WriteReviewBody) => void;
+  onResolveContradiction: (id: string, body: ResolveContradictionBody) => void;
 }
 
-/** A single review with before/after diff and approve / reject / write-correction. */
-export function ReviewCard({ review, onResolve, onWrite }: ReviewCardProps) {
+/** A single review card. Plain reviews approve / reject / write-correct;
+ * contradiction reviews pick an authoritative source or write the fix. */
+export function ReviewCard({
+  review,
+  onResolve,
+  onWrite,
+  onResolveContradiction,
+}: ReviewCardProps) {
   const [exit, setExit] = useState<ExitDir | null>(null);
 
   // Play a brief exit animation, then run the resolution once it's off-screen.
@@ -36,6 +43,9 @@ export function ReviewCard({ review, onResolve, onWrite }: ReviewCardProps) {
 
   const applyWrite = (body: WriteReviewBody) =>
     dismiss("up", () => onWrite(review.id, body));
+
+  const applyResolve = (body: ResolveContradictionBody) =>
+    dismiss("up", () => onResolveContradiction(review.id, body));
 
   return (
     <Card
@@ -93,32 +103,66 @@ export function ReviewCard({ review, onResolve, onWrite }: ReviewCardProps) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 border-t border-line bg-paper px-6 py-3">
-        <SectionLabel className="pb-0 text-ink-4">Review in under 30s</SectionLabel>
-        <div className="ml-auto flex gap-2.5">
-          <Button variant="outline" size="sm" onClick={() => act("reject")}>
-            <AppIcon name="close" size={15} />
-            Reject
-          </Button>
-          <WriteCorrectionDialog
-            defaultValue={review.after}
-            onSubmit={applyWrite}
-            trigger={
-              <Button variant="outline" size="sm">
-                <AppIcon name="diff" size={15} />
-                Write correction
-              </Button>
-            }
-          />
-          <Button
-            size="sm"
-            className="bg-green text-white shadow-soft-1 hover:bg-green/90"
-            onClick={() => act("approve")}
-          >
-            <AppIcon name="check" size={15} />
-            Approve
-          </Button>
-        </div>
+      <div className="flex flex-wrap items-center gap-2.5 border-t border-line bg-paper px-6 py-3">
+        <SectionLabel className="pb-0 text-ink-4">
+          {review.isContradiction ? "Two sources disagree — pick one" : "Review in under 30s"}
+        </SectionLabel>
+        {review.isContradiction ? (
+          <div className="ml-auto flex flex-wrap gap-2.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => applyResolve({ choice: "source_a" })}
+            >
+              Keep current
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => applyResolve({ choice: "source_b" })}
+            >
+              Use proposed
+            </Button>
+            <WriteCorrectionDialog
+              title="Write the authoritative version"
+              description="Neither source is right on its own — write the correct logic. It publishes at full confidence."
+              defaultValue={review.after}
+              submitLabel="Resolve with this"
+              onSubmit={(body) => applyResolve({ choice: "write", correction: body })}
+              trigger={
+                <Button variant="outline" size="sm">
+                  <AppIcon name="diff" size={15} />
+                  Write version
+                </Button>
+              }
+            />
+          </div>
+        ) : (
+          <div className="ml-auto flex flex-wrap gap-2.5">
+            <Button variant="outline" size="sm" onClick={() => act("reject")}>
+              <AppIcon name="close" size={15} />
+              Reject
+            </Button>
+            <WriteCorrectionDialog
+              defaultValue={review.after}
+              onSubmit={applyWrite}
+              trigger={
+                <Button variant="outline" size="sm">
+                  <AppIcon name="diff" size={15} />
+                  Write correction
+                </Button>
+              }
+            />
+            <Button
+              size="sm"
+              className="bg-green text-white shadow-soft-1 hover:bg-green/90"
+              onClick={() => act("approve")}
+            >
+              <AppIcon name="check" size={15} />
+              Approve
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );
