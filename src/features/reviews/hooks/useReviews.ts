@@ -7,7 +7,13 @@ import { isApiError } from "@/lib/api";
 import { SOURCES } from "@/constants/sources";
 import type { SourceId } from "@/types/common";
 
-import { reviewKeys, reviewsApi, type ReviewOut } from "../api";
+import {
+  reviewKeys,
+  reviewsApi,
+  type ReviewOut,
+  type ResolveContradictionBody,
+  type WriteReviewBody,
+} from "../api";
 import type { Review } from "../types";
 
 export type ReviewVerdict = "approve" | "reject";
@@ -38,6 +44,7 @@ function mapReview(r: ReviewOut): Review {
     quote: r.evidenceQuote ?? "",
     who: r.evidenceAuthor ?? "",
     conf: r.confidence ?? 0,
+    isContradiction: r.kind === "contradiction",
   };
 }
 
@@ -74,19 +81,27 @@ export function useReviews() {
     : queue.length;
   const done = stats ? stats.approved + stats.rejected : 0;
 
+  // Optimistic removal shared by every resolution path: drop the given ids from
+  // the pending list, snapshotting for rollback on failure.
+  const removeFromQueue = async (ids: string[]) => {
+    await queryClient.cancelQueries({ queryKey: listKey });
+    const previous = queryClient.getQueryData<ReviewOut[]>(listKey);
+    const drop = new Set(ids);
+    queryClient.setQueryData<ReviewOut[]>(listKey, (current) =>
+      current?.filter((review) => !drop.has(review.id)),
+    );
+    return { previous };
+  };
+  const rollback = (context: { previous?: ReviewOut[] } | undefined) => {
+    if (context?.previous) queryClient.setQueryData(listKey, context.previous);
+  };
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) });
+
   const resolve = useMutation({
     mutationFn: ({ id, verdict }: { id: string; verdict: ReviewVerdict }) =>
       verdict === "approve" ? reviewsApi.approve(id) : reviewsApi.reject(id),
-
-    onMutate: async ({ id }) => {
-      await queryClient.cancelQueries({ queryKey: listKey });
-      const previous = queryClient.getQueryData<ReviewOut[]>(listKey);
-      queryClient.setQueryData<ReviewOut[]>(listKey, (current) =>
-        current?.filter((review) => review.id !== id),
-      );
-      return { previous };
-    },
-
+    onMutate: ({ id }) => removeFromQueue([id]),
     onSuccess: (_result, { verdict }) => {
       toast.success(
         verdict === "approve"
@@ -94,15 +109,57 @@ export function useReviews() {
           : "Rejected · change discarded",
       );
     },
-
     // Overriding onError opts out of the global toast — restore + raise our own.
     onError: (err, _vars, context) => {
-      if (context?.previous) queryClient.setQueryData(listKey, context.previous);
+      rollback(context);
       toast.error(isApiError(err) ? err.message : "Couldn't record that review");
     },
+    onSettled: invalidate,
+  });
 
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) }),
+  // Reviewer authors the correct skill logic directly (POST /reviews/{id}/write).
+  const writeMut = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: WriteReviewBody }) =>
+      reviewsApi.write(id, body),
+    onMutate: ({ id }) => removeFromQueue([id]),
+    onSuccess: () => toast.success("Correction published · confidence 1.0"),
+    onError: (err, _vars, context) => {
+      rollback(context);
+      toast.error(isApiError(err) ? err.message : "Couldn't publish the correction");
+    },
+    onSettled: invalidate,
+  });
+
+  // Resolve a contradiction card (POST /reviews/{id}/resolve).
+  const contradictionMut = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ResolveContradictionBody }) =>
+      reviewsApi.resolve(id, body),
+    onMutate: ({ id }) => removeFromQueue([id]),
+    onSuccess: () => toast.success("Contradiction resolved"),
+    onError: (err, _vars, context) => {
+      rollback(context);
+      toast.error(isApiError(err) ? err.message : "Couldn't resolve the contradiction");
+    },
+    onSettled: invalidate,
+  });
+
+  // Approve many sweep-sourced reviews at once (POST /reviews/bulk-approve).
+  const bulkMut = useMutation({
+    mutationFn: ({ ids, comment }: { ids: string[]; comment?: string }) =>
+      reviewsApi.bulkApprove(ids, comment),
+    onMutate: ({ ids }) => removeFromQueue(ids),
+    onSuccess: (result) => {
+      toast.success(
+        result.skipped > 0
+          ? `Approved ${result.approved} · skipped ${result.skipped}`
+          : `Approved ${result.approved}`,
+      );
+    },
+    onError: (err, _vars, context) => {
+      rollback(context);
+      toast.error(isApiError(err) ? err.message : "Couldn't approve those reviews");
+    },
+    onSettled: invalidate,
   });
 
   const approve = useCallback(
@@ -113,6 +170,19 @@ export function useReviews() {
     (id: string) => resolve.mutate({ id, verdict: "reject" }),
     [resolve],
   );
+  const write = useCallback(
+    (id: string, body: WriteReviewBody) => writeMut.mutate({ id, body }),
+    [writeMut],
+  );
+  const resolveContradiction = useCallback(
+    (id: string, body: ResolveContradictionBody) =>
+      contradictionMut.mutate({ id, body }),
+    [contradictionMut],
+  );
+  const bulkApprove = useCallback(
+    (ids: string[], comment?: string) => bulkMut.mutate({ ids, comment }),
+    [bulkMut],
+  );
 
   return {
     queue,
@@ -120,6 +190,10 @@ export function useReviews() {
     done,
     approve,
     reject,
+    write,
+    resolveContradiction,
+    bulkApprove,
+    isBulkApproving: bulkMut.isPending,
     isPending: listQuery.isPending,
     isError: listQuery.isError,
     error: listQuery.error,

@@ -19,4 +19,11 @@ export type Review = {
   who: string;
   /** Confidence 0–100. */
   conf: number;
+  /**
+   * True when this is a contradiction card. Contradictions resolve differently
+   * from a plain approve/reject: the reviewer picks the authoritative side
+   * (`before` = source A / current, `after` = source B / proposed) or writes a
+   * correction. See `POST /reviews/{id}/resolve`.
+   */
+  isContradiction: boolean;
 };

@@ -1,4 +1,10 @@
-export { reviewsApi, reviewKeys, type ReviewListParams } from "./reviews.api";
+export {
+  reviewsApi,
+  reviewKeys,
+  type ReviewListParams,
+  type WriteReviewBody,
+  type ResolveContradictionBody,
+} from "./reviews.api";
 export {
   type BulkApproveItem,
   type BulkApproveResult,
