@@ -46,7 +46,7 @@ export function SkillsTable({ skills }: SkillsTableProps) {
           ) : (
             skills.map((skill, i) => (
               <div
-                key={skill.name}
+                key={skill.id ?? skill.name}
                 className={cn(
                   "grid items-center gap-3.5 px-[22px] py-3.5 transition-colors hover:bg-paper",
                   COLUMNS,
@@ -65,22 +65,36 @@ export function SkillsTable({ skills }: SkillsTableProps) {
                   {skill.v}
                 </Badge>
                 <div className="flex gap-1.5">
-                  {skill.src.map((id) => (
-                    <SourceIcon key={id} id={id} size={18} branded />
-                  ))}
+                  {skill.src.length === 0 ? (
+                    <span className="text-[13px] text-ink-4">—</span>
+                  ) : (
+                    skill.src.map((id) => (
+                      <SourceIcon key={id} id={id} size={18} branded />
+                    ))
+                  )}
                 </div>
                 <div className="flex items-center gap-2.5">
-                  <Sparkline
-                    data={skill.spark}
-                    width={58}
-                    height={20}
-                    fill={false}
-                    color="var(--ink-3)"
-                    strokeWidth={1.4}
-                  />
-                  <span className="tnum text-[13px] font-semibold text-ink-2">
-                    {skill.calls}
-                  </span>
+                  {skill.spark && skill.calls ? (
+                    <>
+                      <Sparkline
+                        data={skill.spark}
+                        width={58}
+                        height={20}
+                        fill={false}
+                        color="var(--ink-3)"
+                        strokeWidth={1.4}
+                      />
+                      <span className="tnum text-[13px] font-semibold text-ink-2">
+                        {skill.calls}
+                      </span>
+                    </>
+                  ) : skill.similarity !== undefined ? (
+                    <span className="tnum text-[13px] font-semibold text-ink-3">
+                      {Math.round(skill.similarity * 100)}% match
+                    </span>
+                  ) : (
+                    <span className="text-[13px] text-ink-4">—</span>
+                  )}
                 </div>
                 <StatusBadge status={skill.status} />
                 <button
@@ -88,7 +102,12 @@ export function SkillsTable({ skills }: SkillsTableProps) {
                   aria-label={`View ${skill.name} diff`}
                   onClick={() =>
                     toast.info(`${skill.name} ${skill.v}`, {
-                      description: `Last updated ${skill.updated} · ${skill.calls} calls in 30d.`,
+                      description:
+                        skill.calls && skill.updated
+                          ? `Last updated ${skill.updated} · ${skill.calls} calls in 30d.`
+                          : skill.similarity !== undefined
+                            ? `${Math.round(skill.similarity * 100)}% match for your search.`
+                            : "Published skill.",
                     })
                   }
                   className="grid size-7 place-items-center justify-self-end rounded-md text-ink-3 transition-colors hover:bg-cream hover:text-ink"
