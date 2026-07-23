@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
+import { useAuth } from "@/app/providers/AuthProvider";
 import { AppIcon, AppLogo } from "@/components/shared";
 import {
   DropdownMenu,
@@ -44,6 +45,12 @@ function WorkspaceMark({ className }: { className?: string }) {
  */
 export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProps) {
   const navigate = useNavigate();
+  const { workspace } = useAuth();
+
+  // Name + url come from the live session; plan tier and member count have no
+  // backend yet, so they stay on the static workspace fixture.
+  const name = workspace?.name ?? WORKSPACE.name;
+  const url = workspace?.slug ?? WORKSPACE.url;
 
   if (collapsed) {
     return (
@@ -52,13 +59,13 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
           <button
             type="button"
             onClick={() => navigate(ROUTES.dashboard)}
-            aria-label={`${WORKSPACE.name} — go to Overview`}
+            aria-label={`${name} — go to Overview`}
             className="mx-auto flex size-11 items-center justify-center rounded-[11px] transition-colors hover:bg-paper"
           >
             <WorkspaceMark />
           </button>
         </TooltipTrigger>
-        <TooltipContent side="right">{WORKSPACE.name}</TooltipContent>
+        <TooltipContent side="right">{name}</TooltipContent>
       </Tooltip>
     );
   }
@@ -73,7 +80,7 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
           <WorkspaceMark />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-bold leading-tight tracking-[-0.02em] text-ink">
-              {WORKSPACE.name}
+              {name}
             </span>
             <span className="block truncate text-[11px] leading-tight text-ink-4">
               {WORKSPACE.plan}
@@ -91,9 +98,9 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
         <div className="flex items-center gap-2.5 px-2 pb-2.5 pt-1.5">
           <WorkspaceMark />
           <div className="min-w-0">
-            <div className="truncate text-sm font-bold text-ink">{WORKSPACE.name}</div>
+            <div className="truncate text-sm font-bold text-ink">{name}</div>
             <div className="truncate text-xs text-ink-3">
-              {WORKSPACE.url} · {WORKSPACE.memberCount} members
+              {url} · {WORKSPACE.memberCount} members
             </div>
           </div>
         </div>

@@ -15,14 +15,7 @@ export {
 } from "./api";
 export { describeSource, type SourcePresentation } from "./utils/status";
 
-// The fixtures below still back the Overview screen and the "Reading now"
-// simulation, neither of which is migrated yet (phase 5 of
-// FE_BE_INTEGRATION_PLAN.md). Delete them along with those screens.
-export { SOURCE_HEALTH } from "./data/source-health";
+// SOURCE_ACTIVITY still backs the "Reading now" ingestion animation, which is a
+// deliberate simulation (no backend feed). Delete it if that ticker is removed.
 export { SOURCE_ACTIVITY } from "./data/source-activity";
-export type {
-  SourceHealth,
-  SourceHealthMap,
-  SourceActivity,
-  SourceActivityMap,
-} from "./types";
+export type { SourceActivity, SourceActivityMap } from "./types";

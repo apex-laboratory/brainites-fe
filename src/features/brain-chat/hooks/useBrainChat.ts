@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
+import { useAuth } from "@/app/providers/AuthProvider";
 import { BRAND } from "@/constants/brand";
-import { CURRENT_USER } from "@/features/dashboard/data/workspace";
 
 import { answerFor } from "../data/answer-for";
 import { CHAT_SUGGESTIONS } from "../data/brain-answers";
@@ -9,11 +9,11 @@ import type { ChatMessage } from "../types";
 
 const REPLY_DELAY_MS = 850;
 
-function greeting(): ChatMessage {
-  const firstName = CURRENT_USER.name.split(" ")[0];
+function greeting(firstName: string, workspaceName: string): ChatMessage {
+  const who = firstName ? `Hi ${firstName}` : "Hi";
   return {
     role: "brain",
-    text: `Hi ${firstName} — I'm ${BRAND.workspace}'s brain. Ask me anything your team has decided, and I'll answer with sources.`,
+    text: `${who} — I'm ${workspaceName}'s brain. Ask me anything your team has decided, and I'll answer with sources.`,
     sources: [],
     conf: null,
   };
@@ -37,7 +37,14 @@ export type BrainChatState = {
  * `BrainChatContext` so the conversation persists across navigation.
  */
 export function useBrainChat(): BrainChatState {
-  const [messages, setMessages] = useState<ChatMessage[]>([greeting()]);
+  const { user, workspace } = useAuth();
+  const firstName = user?.name?.trim().split(" ")[0] ?? "";
+  const workspaceName = workspace?.name ?? BRAND.workspace;
+
+  // Lazy initializer: the greeting is seeded once from the session identity.
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    greeting(firstName, workspaceName),
+  ]);
   const [typing, setTyping] = useState(false);
 
   const send = useCallback(
