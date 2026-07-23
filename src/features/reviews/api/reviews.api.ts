@@ -30,6 +30,17 @@ export type WriteReviewBody = {
 };
 
 /**
+ * Body for `POST /reviews/{id}/resolve` — resolve a contradiction card. Adopt
+ * one side's proposed text (`source_a`/`source_b`) as the new base logic, or
+ * `write` the correct version (requires `correction`).
+ */
+export type ResolveContradictionBody = {
+  choice: "source_a" | "source_b" | "write";
+  correction?: WriteReviewBody | null;
+  comment?: string;
+};
+
+/**
  * Reviews endpoint functions. Workspace scope comes from the JWT; every route
  * requires an **admin** role (a viewer/editor gets 403).
  */
@@ -58,6 +69,10 @@ export const reviewsApi = {
   /** Reviewer writes the correct skill logic directly (publishes at confidence 1.0). */
   write: (reviewId: string, body: WriteReviewBody): Promise<ResolveResult> =>
     api.post(`/reviews/${reviewId}/write`, ResolveResultSchema, body),
+
+  /** Resolve a contradiction: pick an authoritative source, or write the fix. */
+  resolve: (reviewId: string, body: ResolveContradictionBody): Promise<ResolveResult> =>
+    api.post(`/reviews/${reviewId}/resolve`, ResolveResultSchema, body),
 };
 
 /** Query keys for the reviews feature (workspace-keyed so a switch can't serve stale). */
