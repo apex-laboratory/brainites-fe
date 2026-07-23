@@ -26,9 +26,11 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
   const [ruleHead, ...ruleRest] = decision.rule.split(" ");
   const [pinned, setPinned] = useState(false);
 
+  const sourceName = decision.src ? SOURCES[decision.src].name : "the source";
+
   const openSource = () => {
-    toast.info(`Opening in ${SOURCES[decision.src].name}`, {
-      description: decision.where,
+    toast.info(`Opening in ${sourceName}`, {
+      description: decision.where || undefined,
     });
   };
 
@@ -45,7 +47,13 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
   return (
     <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-14 pt-7 md:px-8">
       <div className="flex items-center gap-2.5">
-        <SourceTile id={decision.src} size={40} iconSize={22} />
+        {decision.src ? (
+          <SourceTile id={decision.src} size={40} iconSize={22} />
+        ) : (
+          <span className="grid size-10 shrink-0 place-items-center rounded-[9px] bg-cream text-ink-3">
+            <AppIcon name="sparkles" size={22} />
+          </span>
+        )}
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <SectionLabel className="pb-0">{decision.cat}</SectionLabel>
@@ -91,7 +99,7 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
         <MiniStat label="Times applied" value={`${decision.uses} / mo`} />
         <MiniStat
           label="Source"
-          value={`${SOURCES[decision.src].name} · ${decision.where}`}
+          value={decision.where ? `${sourceName} · ${decision.where}` : sourceName}
         />
       </div>
 
@@ -114,8 +122,8 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
         <div className="mt-4 flex flex-wrap items-center gap-2.5 border-t border-line pt-4">
           <span className="text-[13px] text-ink-3">Extracted from</span>
           <Badge variant="outline" className="gap-1.5">
-            <SourceIcon id={decision.src} size={13} branded />
-            {decision.where}
+            {decision.src && <SourceIcon id={decision.src} size={13} branded />}
+            {decision.where || sourceName}
           </Badge>
           <span className="tnum ml-auto text-[11.5px] text-ink-4">
             updated {decision.updated}

@@ -17,13 +17,13 @@ export type Skill = {
    */
   similarity?: number;
   /**
-   * Decorative usage metrics from the prototype. The backend search surface
-   * doesn't carry these, so they're optional — the table shows a placeholder
-   * when absent.
+   * Usage metrics from the backend (`calls30d` / `callSeries` / `updatedAt`).
+   * Optional — a skill with no recorded interactions carries no series, and the
+   * table falls back to a placeholder (or the `% match` on a search hit).
    */
   calls?: string;
-  /** Relative update time (pre-formatted). */
+  /** Relative update time (formatted from `updatedAt`). */
   updated?: string;
-  /** 7-point call sparkline series. */
+  /** 7-point daily call sparkline series (oldest→newest). */
   spark?: number[];
 };

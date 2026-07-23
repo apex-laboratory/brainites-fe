@@ -176,26 +176,27 @@ function normalizeFastApiDetails(details: unknown[]): ApiErrorDetail[] | undefin
 }
 
 /**
- * Issue an API request and validate its response against `schema`.
- * `schema` should describe the **unwrapped** payload (the value of `data`).
- * Pass `z.void()`/`z.undefined()` for 204 responses.
+ * The core request: fetch, refresh-on-401, unwrap the envelope, and validate
+ * `data` against `schema`. Returns the validated payload **and** the raw
+ * envelope `meta`, so callers that need pagination can read it. `schema` should
+ * describe the **unwrapped** payload (the value of `data`).
  */
-export async function api<T>(
+async function request<T>(
   path: string,
   schema: ResponseSchema<T>,
-  init: ApiInit = {},
-): Promise<T> {
+  init: ApiInit,
+): Promise<{ data: T; meta: SuccessEnvelope<unknown>["meta"] }> {
   const res = await doFetch(path, init);
 
   // Transparent single refresh + retry on an expired access token.
   if (res.status === 401 && !init.skipAuth && !init.skipAuthRetry) {
     await refreshTokens(); // single-flight; throws + signals on failure
-    return api(path, schema, { ...init, skipAuthRetry: true });
+    return request(path, schema, { ...init, skipAuthRetry: true });
   }
 
   if (!res.ok) throw await toApiError(res);
 
-  if (res.status === 204) return schema.parse(undefined);
+  if (res.status === 204) return { data: schema.parse(undefined), meta: undefined };
 
   let body: SuccessEnvelope<unknown>;
   try {
@@ -216,12 +217,52 @@ export async function api<T>(
       res.status,
     );
   }
-  return result.data;
+  return { data: result.data, meta: body.meta };
+}
+
+/**
+ * Issue an API request and validate its response against `schema`.
+ * `schema` should describe the **unwrapped** payload (the value of `data`).
+ * Pass `z.void()`/`z.undefined()` for 204 responses.
+ */
+export async function api<T>(
+  path: string,
+  schema: ResponseSchema<T>,
+  init: ApiInit = {},
+): Promise<T> {
+  const { data } = await request(path, schema, init);
+  return data;
+}
+
+/** One page of a cursor-paginated list: the validated items plus the opaque
+ * `nextCursor` from `meta` (`null` when there are no more pages). */
+export interface Page<T> {
+  items: T;
+  nextCursor: string | null;
+}
+
+/**
+ * Like `api`, but also surfaces the envelope's `meta.nextCursor` for
+ * cursor-paginated list endpoints (`GET /skills`, `GET /decisions`). The cursor
+ * is opaque — pass it back verbatim as the next request's `cursor` param.
+ */
+export async function apiPage<T>(
+  path: string,
+  schema: ResponseSchema<T>,
+  init: ApiInit = {},
+): Promise<Page<T>> {
+  const { data, meta } = await request(path, schema, init);
+  const raw = meta?.nextCursor;
+  return { items: data, nextCursor: typeof raw === "string" ? raw : null };
 }
 
 // Convenience verbs. `body`/`params` are threaded through `ApiInit`.
 api.get = <T>(path: string, schema: ResponseSchema<T>, init?: Omit<ApiInit, "method" | "body">) =>
   api(path, schema, { ...init, method: "GET" });
+
+/** GET a cursor-paginated list, returning `{ items, nextCursor }`. */
+api.getPage = <T>(path: string, schema: ResponseSchema<T>, init?: Omit<ApiInit, "method" | "body">) =>
+  apiPage(path, schema, { ...init, method: "GET" });
 
 api.post = <T>(path: string, schema: ResponseSchema<T>, body?: unknown, init?: Omit<ApiInit, "method">) =>
   api(path, schema, { ...init, method: "POST", body });

@@ -5,7 +5,8 @@ export type DecisionStatus = "approved" | "active" | "review";
 export type Decision = {
   id: string;
   title: string;
-  src: SourceId;
+  /** Source lineage. `null` when the backend provider is unknown/unset. */
+  src: SourceId | null;
   /** Where the decision was found (channel, view, project…). */
   where: string;
   status: DecisionStatus;

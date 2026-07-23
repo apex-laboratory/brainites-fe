@@ -13,19 +13,62 @@ import { IsoDateTimeSchema } from "@/lib/api/schemas";
  * blank the screen.
  */
 
-/** One semantic-search hit. `similarity` is cosine similarity (0–1). */
+/**
+ * One semantic-search hit. `similarity` is cosine similarity (0–1). Search only
+ * ever returns published skills, so `status` is `active`/`stable`. `calls30d` /
+ * `callSeries` / `updatedAt` mirror the browse item so the registry table renders
+ * the same usage metrics for search hits and browse rows.
+ */
 export const SkillSearchResultSchema = z.object({
   id: z.string(),
   name: z.string(),
   version: z.string(),
+  status: z.string().nullish(),
   baseLogic: z.string(),
   exceptionsBlock: z.array(z.unknown()).default([]),
   sourceAuthority: z.string().nullish(),
   similarity: z.number(),
+  calls30d: z.number().default(0),
+  callSeries: z.array(z.number()).default([]),
+  updatedAt: IsoDateTimeSchema.nullish(),
 });
 export type SkillSearchResult = z.infer<typeof SkillSearchResultSchema>;
 
 export const SkillSearchListSchema = z.array(SkillSearchResultSchema);
+
+/**
+ * One row of the browse-the-registry list (`GET /skills`). Same shape as a
+ * search hit minus `similarity`, so the FE shares one table view model.
+ * `callSeries` is a 7-point daily sparkline (oldest→newest); `sourceProviders`
+ * lists every source that contributed to the skill.
+ */
+export const SkillListItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+  status: z.string(),
+  baseLogic: z.string().nullish(),
+  exceptionsBlock: z.array(z.unknown()).default([]),
+  sourceAuthority: z.string().nullish(),
+  sourceProviders: z.array(z.string()).default([]),
+  description: z.string().nullish(),
+  calls30d: z.number().default(0),
+  callSeries: z.array(z.number()).default([]),
+  updatedAt: IsoDateTimeSchema.nullish(),
+});
+export type SkillListItem = z.infer<typeof SkillListItemSchema>;
+
+export const SkillListSchema = z.array(SkillListItemSchema);
+
+/** `GET /skills/stats` → registry summary strip (mirrors `/reviews/stats`). */
+export const SkillStatsSchema = z.object({
+  total: z.number(),
+  stable: z.number(),
+  inReview: z.number(),
+  draft: z.number(),
+  calls30d: z.number(),
+});
+export type SkillStats = z.infer<typeof SkillStatsSchema>;
 
 /** Full skill body (`GET /skills/{id}`), served to agents and the dashboard. */
 export const SkillSchema = z.object({
@@ -56,3 +99,15 @@ export const SkillVersionSchema = z.object({
 export type SkillVersionOut = z.infer<typeof SkillVersionSchema>;
 
 export const SkillVersionListSchema = z.array(SkillVersionSchema);
+
+/**
+ * Body for `POST /skills` — manually author a skill from the dashboard
+ * (admin-only). The skill lands at status `draft` and opens a review, so a human
+ * still confirms it before it becomes agent-queryable. Returns a `SkillOut`.
+ */
+export type CreateSkillBody = {
+  name: string;
+  trigger?: string;
+  baseLogic: string;
+  description?: string;
+};

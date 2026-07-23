@@ -1,19 +1,50 @@
-import { AppIcon, PageHeader, type AppIconName } from "@/components/shared";
+import {
+  AppIcon,
+  ErrorState,
+  PageHeader,
+  Skeleton,
+  StatStrip,
+  type Stat,
+} from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { isApiError } from "@/lib/api";
+import { formatCompact } from "@/utils/format";
 
 import { NewSkillDialog } from "../components/NewSkillDialog";
 import { SkillsTable } from "../components/SkillsTable";
 import { useExportSkills } from "../hooks/useExportSkills";
 import { useSkillsSearch } from "../hooks/useSkillsSearch";
+import { useSkillsStats } from "../hooks/useSkillsStats";
 
-/** Skills registry screen. Backed by `/skills/search` — the backend has no
- * list-all surface, so the registry is search-driven. */
+/**
+ * Skills registry screen. Browses `/skills` by default (paginated) and switches
+ * to semantic search (`/skills/search`) once you type. Header stats come from
+ * `/skills/stats`.
+ */
 export function SkillsPage() {
-  const { query, setQuery, hasQuery, filtered, isPending, isError, error } =
-    useSkillsSearch();
+  const {
+    query,
+    setQuery,
+    hasQuery,
+    skills,
+    isPending,
+    isError,
+    error,
+    hasMore,
+    isFetchingMore,
+    loadMore,
+  } = useSkillsSearch();
   const { exportBundle, isExporting } = useExportSkills();
+  const statsQuery = useSkillsStats();
+
+  const stats: Stat[] = statsQuery.data
+    ? [
+        { label: "Total", value: formatCompact(statsQuery.data.total) },
+        { label: "Stable", value: formatCompact(statsQuery.data.stable) },
+        { label: "In review", value: formatCompact(statsQuery.data.inReview) },
+        { label: "Calls · 30d", value: formatCompact(statsQuery.data.calls30d) },
+      ]
+    : [];
 
   return (
     <div className="h-full overflow-y-auto">
@@ -58,44 +89,41 @@ export function SkillsPage() {
         }
       />
 
-      <div className="mx-auto max-w-[1100px] px-6 pb-14 pt-6 md:px-10">
-        {!hasQuery ? (
-          <EmptyState
-            icon="search"
-            title="Search the registry"
-            body="Type a query to semantically search your published skills."
+      <div className="mx-auto flex max-w-[1100px] flex-col gap-5 px-6 pb-14 pt-6 md:px-10">
+        {stats.length > 0 && <StatStrip stats={stats} />}
+
+        {isError ? (
+          <ErrorState
+            error={error}
+            title={hasQuery ? "Couldn't search skills" : "Couldn't load the registry"}
           />
         ) : isPending ? (
-          <EmptyState icon="skills" title="Searching…" body="Finding the closest skills." />
-        ) : isError ? (
-          <EmptyState
-            icon="warning"
-            title="Couldn't search skills"
-            body={isApiError(error) ? error.message : "Something went wrong. Try again."}
-          />
+          <Skeleton className="h-[280px] rounded-xl" />
         ) : (
-          <SkillsTable skills={filtered} />
+          <>
+            <SkillsTable
+              skills={skills}
+              emptyLabel={
+                hasQuery
+                  ? "No skills match your search."
+                  : "No skills in the registry yet."
+              }
+            />
+            {hasMore && (
+              <div className="flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadMore}
+                  disabled={isFetchingMore}
+                >
+                  {isFetchingMore ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
-    </div>
-  );
-}
-
-interface EmptyStateProps {
-  icon: AppIconName;
-  title: string;
-  body: string;
-}
-
-/** Centered idle / loading / error placeholder for the search-driven registry. */
-function EmptyState({ icon, title, body }: EmptyStateProps) {
-  return (
-    <div className="grid place-items-center rounded-xl border border-line-soft bg-paper/40 px-6 py-20 text-center">
-      <span className="mb-3 grid size-11 place-items-center rounded-xl bg-cream text-ink-3">
-        <AppIcon name={icon} size={20} />
-      </span>
-      <p className="text-[15px] font-semibold text-ink">{title}</p>
-      <p className="mt-1 max-w-[360px] text-[13px] text-ink-3">{body}</p>
     </div>
   );
 }

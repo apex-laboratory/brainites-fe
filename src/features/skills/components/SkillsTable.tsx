@@ -18,10 +18,15 @@ const HEADERS = ["Skill", "Version", "Source lineage", "Calls · 30d", "Status",
 
 export interface SkillsTableProps {
   skills: Skill[];
+  /** Shown when there are no rows (differs for browse vs. search). */
+  emptyLabel?: string;
 }
 
 /** Dense skills registry table built on a CSS grid (prototype `SkillsPage`). */
-export function SkillsTable({ skills }: SkillsTableProps) {
+export function SkillsTable({
+  skills,
+  emptyLabel = "No skills to show yet.",
+}: SkillsTableProps) {
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
@@ -41,7 +46,7 @@ export function SkillsTable({ skills }: SkillsTableProps) {
 
           {skills.length === 0 ? (
             <div className="px-[22px] py-12 text-center text-sm text-ink-4">
-              No skills match your search.
+              {emptyLabel}
             </div>
           ) : (
             skills.map((skill, i) => (
