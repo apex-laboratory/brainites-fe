@@ -5,6 +5,7 @@ import { isApiError } from "@/lib/api";
 
 import { NewSkillDialog } from "../components/NewSkillDialog";
 import { SkillsTable } from "../components/SkillsTable";
+import { useExportSkills } from "../hooks/useExportSkills";
 import { useSkillsSearch } from "../hooks/useSkillsSearch";
 
 /** Skills registry screen. Backed by `/skills/search` — the backend has no
@@ -12,6 +13,7 @@ import { useSkillsSearch } from "../hooks/useSkillsSearch";
 export function SkillsPage() {
   const { query, setQuery, hasQuery, filtered, isPending, isError, error } =
     useSkillsSearch();
+  const { exportBundle, isExporting } = useExportSkills();
 
   return (
     <div className="h-full overflow-y-auto">
@@ -35,6 +37,15 @@ export function SkillsPage() {
                 className="w-[200px] pl-9"
               />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportBundle}
+              disabled={isExporting}
+            >
+              <AppIcon name="externalLink" size={15} />
+              {isExporting ? "Exporting…" : "Export"}
+            </Button>
             <NewSkillDialog
               trigger={
                 <Button variant="solid" size="sm">
