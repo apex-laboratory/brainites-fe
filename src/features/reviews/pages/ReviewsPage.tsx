@@ -7,8 +7,18 @@ import { useReviews } from "../hooks/useReviews";
 
 /** Review queue triage screen (prototype `ReviewsPage`). */
 export function ReviewsPage() {
-  const { queue, total, done, approve, reject, isPending, isError, error, refetch } =
-    useReviews();
+  const {
+    queue,
+    total,
+    done,
+    approve,
+    reject,
+    write,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useReviews();
   const progress = total === 0 ? 100 : (done / total) * 100;
 
   return (
@@ -81,6 +91,7 @@ export function ReviewsPage() {
                 onResolve={(id, verdict) =>
                   verdict === "approve" ? approve(id) : reject(id)
                 }
+                onWrite={write}
               />
             ))
           )}

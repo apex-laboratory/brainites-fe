@@ -8,29 +8,42 @@ import { cn } from "@/utils/cn";
 
 import type { Review } from "../types";
 import type { ReviewVerdict } from "../hooks/useReviews";
+import type { WriteReviewBody } from "../api";
 import { ConfidenceMeter } from "./ConfidenceMeter";
+import { WriteCorrectionDialog } from "./WriteCorrectionDialog";
+
+/** Which way the card slides as it leaves the queue. */
+type ExitDir = "right" | "left" | "up";
 
 export interface ReviewCardProps {
   review: Review;
   onResolve: (id: string, verdict: ReviewVerdict) => void;
+  onWrite: (id: string, body: WriteReviewBody) => void;
 }
 
-/** A single review with before/after diff and approve/reject (prototype `ReviewCard`). */
-export function ReviewCard({ review, onResolve }: ReviewCardProps) {
-  const [gone, setGone] = useState<ReviewVerdict | null>(null);
+/** A single review with before/after diff and approve / reject / write-correction. */
+export function ReviewCard({ review, onResolve, onWrite }: ReviewCardProps) {
+  const [exit, setExit] = useState<ExitDir | null>(null);
 
-  const act = (verdict: ReviewVerdict) => {
-    setGone(verdict);
-    // brief exit animation before removing from the queue
-    window.setTimeout(() => onResolve(review.id, verdict), 280);
+  // Play a brief exit animation, then run the resolution once it's off-screen.
+  const dismiss = (dir: ExitDir, run: () => void) => {
+    setExit(dir);
+    window.setTimeout(run, 280);
   };
+
+  const act = (verdict: ReviewVerdict) =>
+    dismiss(verdict === "approve" ? "right" : "left", () => onResolve(review.id, verdict));
+
+  const applyWrite = (body: WriteReviewBody) =>
+    dismiss("up", () => onWrite(review.id, body));
 
   return (
     <Card
       className={cn(
         "overflow-hidden p-0 transition-[opacity,transform] duration-300 ease-out",
-        gone === "approve" && "translate-x-10 opacity-0",
-        gone === "reject" && "-translate-x-10 opacity-0"
+        exit === "right" && "translate-x-10 opacity-0",
+        exit === "left" && "-translate-x-10 opacity-0",
+        exit === "up" && "-translate-y-6 opacity-0"
       )}
     >
       <div className="flex flex-col gap-4 p-6">
@@ -87,6 +100,16 @@ export function ReviewCard({ review, onResolve }: ReviewCardProps) {
             <AppIcon name="close" size={15} />
             Reject
           </Button>
+          <WriteCorrectionDialog
+            defaultValue={review.after}
+            onSubmit={applyWrite}
+            trigger={
+              <Button variant="outline" size="sm">
+                <AppIcon name="diff" size={15} />
+                Write correction
+              </Button>
+            }
+          />
           <Button
             size="sm"
             className="bg-green text-white shadow-soft-1 hover:bg-green/90"
