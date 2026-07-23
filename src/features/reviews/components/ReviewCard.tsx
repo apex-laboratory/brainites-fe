@@ -20,6 +20,10 @@ export interface ReviewCardProps {
   onResolve: (id: string, verdict: ReviewVerdict) => void;
   onWrite: (id: string, body: WriteReviewBody) => void;
   onResolveContradiction: (id: string, body: ResolveContradictionBody) => void;
+  /** Whether this card is checked for bulk approve. */
+  selected?: boolean;
+  /** Toggle bulk-approve selection. Omit to hide the checkbox entirely. */
+  onToggleSelect?: (id: string) => void;
 }
 
 /** A single review card. Plain reviews approve / reject / write-correct;
@@ -29,6 +33,8 @@ export function ReviewCard({
   onResolve,
   onWrite,
   onResolveContradiction,
+  selected = false,
+  onToggleSelect,
 }: ReviewCardProps) {
   const [exit, setExit] = useState<ExitDir | null>(null);
 
@@ -58,6 +64,15 @@ export function ReviewCard({
     >
       <div className="flex flex-col gap-4 p-6">
         <div className="flex items-center gap-2.5">
+          {onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(review.id)}
+              aria-label={`Select "${review.title}" for bulk approve`}
+              className="size-4 cursor-pointer accent-green"
+            />
+          )}
           <Badge variant="accent">{review.kind}</Badge>
           {(review.src || review.where) && (
             <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">

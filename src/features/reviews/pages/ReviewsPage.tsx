@@ -1,5 +1,8 @@
+import { useMemo, useState } from "react";
+
 import { AppIcon, ErrorState, Meter, PageHeader, Skeleton } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 import { ReviewCard } from "../components/ReviewCard";
@@ -15,12 +18,39 @@ export function ReviewsPage() {
     reject,
     write,
     resolveContradiction,
+    bulkApprove,
+    isBulkApproving,
     isPending,
     isError,
     error,
     refetch,
   } = useReviews();
   const progress = total === 0 ? 100 : (done / total) * 100;
+
+  // Bulk-approve selection. Ids are intersected with the live queue so a stale
+  // pick (item resolved elsewhere) never lingers in the count or the request.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const selectedIds = useMemo(
+    () => queue.filter((r) => selected.has(r.id)).map((r) => r.id),
+    [queue, selected],
+  );
+  const allSelected = queue.length > 0 && selectedIds.length === queue.length;
+
+  const toggleSelect = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const clearSelection = () => setSelected(new Set());
+  const selectAll = () =>
+    setSelected(allSelected ? new Set() : new Set(queue.map((r) => r.id)));
+  const approveSelected = () => {
+    if (selectedIds.length === 0) return;
+    bulkApprove(selectedIds);
+    clearSelection();
+  };
 
   return (
     <div className="h-full overflow-y-auto">
@@ -73,6 +103,39 @@ export function ReviewsPage() {
           </div>
         </Card>
 
+        {queue.length > 0 && (
+          <div className="mb-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={selectAll}
+              className="text-[12.5px] font-semibold text-ink-3 transition-colors hover:text-ink"
+            >
+              {allSelected ? "Deselect all" : "Select all"}
+            </button>
+            {selectedIds.length > 0 && (
+              <span className="tnum text-[12.5px] text-ink-4">
+                {selectedIds.length} selected
+              </span>
+            )}
+            {selectedIds.length > 0 && (
+              <div className="ml-auto flex items-center gap-2.5">
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  Clear
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-green text-white shadow-soft-1 hover:bg-green/90"
+                  disabled={isBulkApproving}
+                  onClick={approveSelected}
+                >
+                  <AppIcon name="check" size={15} />
+                  {isBulkApproving ? "Approving…" : `Approve ${selectedIds.length}`}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-col gap-4">
           {queue.length === 0 ? (
             <Card className="px-6 py-16 text-center">
@@ -89,6 +152,8 @@ export function ReviewsPage() {
               <ReviewCard
                 key={review.id}
                 review={review}
+                selected={selected.has(review.id)}
+                onToggleSelect={toggleSelect}
                 onResolve={(id, verdict) =>
                   verdict === "approve" ? approve(id) : reject(id)
                 }
