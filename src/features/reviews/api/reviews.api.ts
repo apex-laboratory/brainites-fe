@@ -1,10 +1,12 @@
 import { api } from "@/lib/api";
 
 import {
+  BulkApproveResultSchema,
   ResolveResultSchema,
   ReviewListSchema,
   ReviewSchema,
   ReviewStatsSchema,
+  type BulkApproveResult,
   type ResolveResult,
   type ReviewOut,
   type ReviewStats,
@@ -34,6 +36,13 @@ export const reviewsApi = {
 
   reject: (reviewId: string, comment?: string): Promise<ResolveResult> =>
     api.post(`/reviews/${reviewId}/reject`, ResolveResultSchema, comment ? { comment } : undefined),
+
+  /** Approve many sweep-sourced reviews at once (1–200 ids). */
+  bulkApprove: (ids: string[], comment?: string): Promise<BulkApproveResult> =>
+    api.post("/reviews/bulk-approve", BulkApproveResultSchema, {
+      ids,
+      ...(comment ? { comment } : {}),
+    }),
 };
 
 /** Query keys for the reviews feature (workspace-keyed so a switch can't serve stale). */

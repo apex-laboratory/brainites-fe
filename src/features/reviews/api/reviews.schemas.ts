@@ -49,7 +49,7 @@ export const ReviewStatsSchema = z.object({
 });
 export type ReviewStats = z.infer<typeof ReviewStatsSchema>;
 
-/** `POST /reviews/{id}/approve|reject` → the recorded verdict. */
+/** `POST /reviews/{id}/approve|reject|write|resolve` → the recorded verdict. */
 export const ResolveResultSchema = z.object({
   id: z.string(),
   status: z.enum(["approved", "rejected"]),
@@ -57,3 +57,19 @@ export const ResolveResultSchema = z.object({
   skillId: z.string().nullish(),
 });
 export type ResolveResult = z.infer<typeof ResolveResultSchema>;
+
+/** One row of a `POST /reviews/bulk-approve` result. */
+export const BulkApproveItemSchema = z.object({
+  id: z.string(),
+  status: z.enum(["approved", "skipped", "error"]),
+  detail: z.string().nullish(),
+});
+export type BulkApproveItem = z.infer<typeof BulkApproveItemSchema>;
+
+/** `POST /reviews/bulk-approve` → per-id outcomes + approved/skipped totals. */
+export const BulkApproveResultSchema = z.object({
+  results: z.array(BulkApproveItemSchema),
+  approved: z.number(),
+  skipped: z.number(),
+});
+export type BulkApproveResult = z.infer<typeof BulkApproveResultSchema>;
