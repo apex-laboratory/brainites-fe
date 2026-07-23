@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { IsoDateTimeSchema } from "@/lib/api/schemas";
+
 /**
  * Zod schemas for the Skills API (`/api/v1/skills`), mirroring the backend
  * `SkillSearchResult` / `SkillOut` / `SkillVersionOut` models (Phase 5, PRD §14).
@@ -24,3 +26,20 @@ export const SkillSearchResultSchema = z.object({
 export type SkillSearchResult = z.infer<typeof SkillSearchResultSchema>;
 
 export const SkillSearchListSchema = z.array(SkillSearchResultSchema);
+
+/** Full skill body (`GET /skills/{id}`), served to agents and the dashboard. */
+export const SkillSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  version: z.string(),
+  status: z.string(),
+  trigger: z.string().nullish(),
+  baseLogic: z.string().nullish(),
+  exceptionsBlock: z.array(z.unknown()).default([]),
+  actions: z.array(z.unknown()).default([]),
+  sourceAuthority: z.string().nullish(),
+  confidence: z.number().nullish(),
+  createdAt: IsoDateTimeSchema.nullish(),
+  updatedAt: IsoDateTimeSchema.nullish(),
+});
+export type SkillOut = z.infer<typeof SkillSchema>;
