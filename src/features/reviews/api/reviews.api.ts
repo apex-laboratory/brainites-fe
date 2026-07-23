@@ -19,6 +19,17 @@ export type ReviewListParams = {
 };
 
 /**
+ * Body for `POST /reviews/{id}/write` — a reviewer-authored correction. The
+ * human writes the skill's base logic directly; it publishes at confidence 1.0.
+ * `exceptions`, when provided, replaces the skill's exceptions block.
+ */
+export type WriteReviewBody = {
+  baseLogic: string;
+  exceptions?: Record<string, unknown>[] | null;
+  comment?: string;
+};
+
+/**
  * Reviews endpoint functions. Workspace scope comes from the JWT; every route
  * requires an **admin** role (a viewer/editor gets 403).
  */
@@ -43,6 +54,10 @@ export const reviewsApi = {
       ids,
       ...(comment ? { comment } : {}),
     }),
+
+  /** Reviewer writes the correct skill logic directly (publishes at confidence 1.0). */
+  write: (reviewId: string, body: WriteReviewBody): Promise<ResolveResult> =>
+    api.post(`/reviews/${reviewId}/write`, ResolveResultSchema, body),
 };
 
 /** Query keys for the reviews feature (workspace-keyed so a switch can't serve stale). */
