@@ -36,7 +36,7 @@ function TypingIndicator() {
  * `BrainChatContext`, so history survives navigating away and back.
  */
 export function BrainChatPage() {
-  const { messages, typing, send, suggestions, showSuggestions } =
+  const { messages, typing, send, suggestions, showSuggestions, ready, notReadyReason } =
     useBrainChatContext();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -119,8 +119,13 @@ export function BrainChatPage() {
                   submit();
                 }
               }}
-              placeholder={`Ask ${BRAND.workspace}'s brain anything…`}
+              placeholder={
+                ready
+                  ? `Ask ${BRAND.workspace}'s brain anything…`
+                  : "The brain isn't ready yet"
+              }
               aria-label="Ask the brain"
+              disabled={!ready}
               rows={1}
               className="max-h-40 min-h-[44px] flex-1 resize-none border-0 bg-transparent px-2 py-2.5 text-[15px] shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
@@ -128,7 +133,7 @@ export function BrainChatPage() {
               type="button"
               size="icon"
               onClick={() => submit()}
-              disabled={typing || !draft.trim()}
+              disabled={typing || !draft.trim() || !ready}
               aria-label="Send"
               className="size-[38px] shrink-0"
             >
@@ -136,8 +141,12 @@ export function BrainChatPage() {
             </Button>
           </div>
           <p className="mt-2 px-1 text-center text-[11.5px] text-ink-4">
-            Answers are backed by your connected sources. Press Enter to send,
-            Shift + Enter for a new line.
+            {notReadyReason ?? (
+              <>
+                Answers are backed by your connected sources. Press Enter to send,
+                Shift + Enter for a new line.
+              </>
+            )}
           </p>
         </div>
       </div>
