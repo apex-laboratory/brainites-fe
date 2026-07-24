@@ -40,10 +40,12 @@ function asStatus(status: string | null | undefined): SkillStatus {
  * the placeholder (or, for a search hit, the `% match`) instead.
  */
 function mapMetrics(calls30d: number, callSeries: number[], updatedAt?: string | null) {
-  const hasUsage = callSeries.some((n) => n > 0);
+  // The 30-day count and the 7-day sparkline are independent windows: show the
+  // count whenever there were calls in the last 30 days, even if the last 7 were
+  // quiet, and draw the sparkline only when the 7-day series actually has data.
   return {
-    calls: hasUsage ? formatCompact(calls30d) : undefined,
-    spark: hasUsage ? callSeries : undefined,
+    calls: calls30d > 0 ? formatCompact(calls30d) : undefined,
+    spark: callSeries.some((n) => n > 0) ? callSeries : undefined,
     updated: formatRelativeTime(updatedAt) ?? undefined,
   };
 }

@@ -55,6 +55,8 @@ export type BrainChatState = {
   /** Send a question to the brain (no-op while a reply is in flight or unready). */
   send: (text: string) => void;
   suggestions: string[];
+  /** Live workspace name (falls back to the brand default pre-session). */
+  workspaceName: string;
   /** True while the conversation is just the opening greeting. */
   showSuggestions: boolean;
   /** False when the backend says the brain can't answer yet. */
@@ -147,6 +149,7 @@ export function useBrainChat(): BrainChatState {
     typing,
     send,
     suggestions: CHAT_SUGGESTIONS,
+    workspaceName,
     showSuggestions: messages.length === 1 && !typing,
     ready,
     notReadyReason,

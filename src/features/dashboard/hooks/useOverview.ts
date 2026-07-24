@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import type { AppIconName } from "@/components/shared";
+import type { AppIconName, StatusTone } from "@/components/shared";
 import { SOURCES, type SourceMeta } from "@/constants/sources";
 import type { SourceId } from "@/types/common";
 import { formatRelativeTime } from "@/utils/date";
@@ -29,18 +29,39 @@ function greetingForHour(hour: number): string {
   return "Good evening";
 }
 
+/** Sync state → dot tone. A failing sync must never show the healthy green
+ * "live" pulse; unknown states degrade to a neutral dot rather than green. */
+const SYNC_TONE: Record<string, StatusTone> = {
+  healthy: "live",
+  syncing: "accent",
+  pending: "neutral",
+  error: "amber",
+};
+
+function syncTone(status: string | null | undefined): StatusTone {
+  return status ? (SYNC_TONE[status] ?? "neutral") : "neutral";
+}
+
 // ── view-model item types (what OverviewPage renders) ───────────────────────
-export type OverviewReview = { id: string; src: SourceId; title: string; kind: string };
+// `src` is nullable: the dashboard payload allows a null `sourceProvider` (an
+// event/decision the backend couldn't attribute to one provider), and those rows
+// must render with a neutral fallback icon rather than being silently dropped.
+export type OverviewReview = { id: string; src: SourceId | null; title: string; kind: string };
 export type OverviewDecision = {
   id: string;
-  src: SourceId;
+  src: SourceId | null;
   title: string;
   body: string;
   status: string;
   updated: string;
 };
-export type OverviewSourceHealth = { meta: SourceMeta; pending: number; sync: string };
-export type OverviewActivity = { txt: string; det: string; src: SourceId; t: string };
+export type OverviewSourceHealth = {
+  meta: SourceMeta;
+  pending: number;
+  sync: string;
+  tone: StatusTone;
+};
+export type OverviewActivity = { txt: string; det: string; src: SourceId | null; t: string };
 
 function mapKpis(kpis: Overview["kpis"]): KpiTileData[] {
   return kpis.map((k) => ({
@@ -54,30 +75,30 @@ function mapKpis(kpis: Overview["kpis"]): KpiTileData[] {
 }
 
 function mapReviews(items: Overview["reviewPreview"]): OverviewReview[] {
-  return items.flatMap((r) => {
-    const src = asSourceId(r.sourceProvider);
-    return src ? [{ id: r.id, src, title: r.title, kind: r.kind }] : [];
-  });
+  return items.map((r) => ({
+    id: r.id,
+    src: asSourceId(r.sourceProvider),
+    title: r.title,
+    kind: r.kind,
+  }));
 }
 
 function mapDecisions(items: Overview["recentDecisions"], now: number): OverviewDecision[] {
-  return items.flatMap((d) => {
-    const src = asSourceId(d.sourceProvider);
-    if (!src) return [];
-    return [
-      {
-        id: d.id,
-        src,
-        title: d.title,
-        body: d.summary ?? d.rule ?? "",
-        status: d.status,
-        updated: formatRelativeTime(d.updatedAt, now) ?? "",
-      },
-    ];
-  });
+  return items.map((d) => ({
+    id: d.id,
+    src: asSourceId(d.sourceProvider),
+    title: d.title,
+    body: d.summary ?? d.rule ?? "",
+    status: d.status,
+    updated: formatRelativeTime(d.updatedAt, now) ?? "",
+  }));
 }
 
 function mapSourceHealth(items: Overview["sourceHealth"], now: number): OverviewSourceHealth[] {
+  // A source connection always carries a known provider (non-null in the
+  // schema), so an unrecognized one is real drift and is dropped — its brand
+  // tile can't render without `SOURCES[id]`. The dot tone comes from the row's
+  // own `syncStatus`, never a hardcoded green.
   return items.flatMap((s) => {
     const src = asSourceId(s.provider);
     if (!src) return [];
@@ -86,24 +107,19 @@ function mapSourceHealth(items: Overview["sourceHealth"], now: number): Overview
         meta: SOURCES[src],
         pending: s.pendingItems,
         sync: formatRelativeTime(s.lastSyncedAt, now) ?? s.extractedLabel ?? "—",
+        tone: syncTone(s.syncStatus),
       },
     ];
   });
 }
 
 function mapActivity(items: Overview["activity"], now: number): OverviewActivity[] {
-  return items.flatMap((a) => {
-    const src = asSourceId(a.sourceProvider);
-    if (!src) return [];
-    return [
-      {
-        txt: a.title,
-        det: a.detail ?? "",
-        src,
-        t: formatRelativeTime(a.createdAt, now) ?? "",
-      },
-    ];
-  });
+  return items.map((a) => ({
+    txt: a.title,
+    det: a.detail ?? "",
+    src: asSourceId(a.sourceProvider),
+    t: formatRelativeTime(a.createdAt, now) ?? "",
+  }));
 }
 
 /**
@@ -129,6 +145,7 @@ export function useOverview() {
       firstName: data?.greetingName ?? "",
       workspaceName: data?.workspace.name ?? "",
       syncLabel: data?.sync.label ?? "",
+      syncTone: syncTone(data?.sync.status),
       kpis: data ? mapKpis(data.kpis) : [],
       reviews: data ? mapReviews(data.reviewPreview) : [],
       recentDecisions: data ? mapDecisions(data.recentDecisions, now) : [],

@@ -79,16 +79,18 @@ export function SkillsTable({
                   )}
                 </div>
                 <div className="flex items-center gap-2.5">
-                  {skill.spark && skill.calls ? (
+                  {skill.calls ? (
                     <>
-                      <Sparkline
-                        data={skill.spark}
-                        width={58}
-                        height={20}
-                        fill={false}
-                        color="var(--ink-3)"
-                        strokeWidth={1.4}
-                      />
+                      {skill.spark && (
+                        <Sparkline
+                          data={skill.spark}
+                          width={58}
+                          height={20}
+                          fill={false}
+                          color="var(--ink-3)"
+                          strokeWidth={1.4}
+                        />
+                      )}
                       <span className="tnum text-[13px] font-semibold text-ink-2">
                         {skill.calls}
                       </span>

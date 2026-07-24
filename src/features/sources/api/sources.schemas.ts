@@ -86,7 +86,19 @@ export const SourceSchema = z.object({
 });
 export type Source = z.infer<typeof SourceSchema>;
 
-export const SourceListSchema = z.array(SourceSchema);
+/**
+ * Row-level tolerant: a single unrecognized provider (a new backend integration
+ * the FE doesn't know yet) must not fail the whole list and blank the Sources
+ * surface. Unknown rows are dropped rather than coerced, because every consumer
+ * indexes `SOURCES[provider]` and a sentinel provider would break the row anyway.
+ */
+export const SourceListSchema = z.array(z.unknown()).transform((rows) =>
+  rows.reduce<Source[]>((kept, row) => {
+    const parsed = SourceSchema.safeParse(row);
+    if (parsed.success) kept.push(parsed.data);
+    return kept;
+  }, []),
+);
 
 /** `POST /sources/{provider}/authorize` → the provider consent URL. */
 export const AuthorizeSchema = z.object({

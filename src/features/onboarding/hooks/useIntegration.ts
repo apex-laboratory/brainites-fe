@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { useAuth, useWorkspaceId } from "@/app/providers/AuthProvider";
 import { useCopyToClipboard, useDisclosure } from "@/hooks";
@@ -44,27 +44,26 @@ export function useIntegration() {
   const settings = useSettings();
   const endpoint = settings.settings?.brainEndpoint ?? null;
 
-  const [created, setCreated] = useState<ApiKeyCreated | null>(null);
-  const mint = useMutation({
-    mutationFn: () =>
+  // Mint at most once per workspace per session. The result is cached, never
+  // refetched, and never garbage-collected, so leaving the integrate step and
+  // returning (Back → Next) re-reads the same key instead of minting a second
+  // live credential — the failure a per-mount ref guard could not prevent.
+  // React Query also single-flights the in-flight request, covering StrictMode.
+  const keyQuery = useQuery({
+    queryKey: ["onboarding-agent-key", workspaceId],
+    queryFn: () =>
       apiKeysApi.create(workspaceId, {
         name: "Onboarding agent key",
         scopes: AGENT_SCOPES.map((scope) => scope.id as ApiKeyScope),
       }),
-    onSuccess: (key) => setCreated(key),
-    // The step surfaces failure via `isError` + retry, not a toast.
-    onError: () => {},
+    enabled: Boolean(workspaceId),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
   });
-
-  // Mint exactly once. A ref (not deps) guards StrictMode's double-mount so we
-  // never create two keys.
-  const minted = useRef(false);
-  useEffect(() => {
-    if (minted.current) return;
-    minted.current = true;
-    mint.mutate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const created: ApiKeyCreated | null = keyQuery.data ?? null;
 
   const apiKey = created?.apiKey ?? null;
   const slug = workspace?.slug ?? "brain";
@@ -82,18 +81,18 @@ export function useIntegration() {
   );
 
   const ready = Boolean(endpoint && apiKey);
-  const isError = settings.isError || mint.isError;
+  const isError = settings.isError || keyQuery.isError;
   const isLoading = !ready && !isError;
 
   const retry = () => {
     if (settings.isError) void settings.refetch();
-    if (mint.isError) mint.mutate();
+    if (keyQuery.isError) void keyQuery.refetch();
   };
 
   return {
     isLoading,
     isError,
-    error: settings.error ?? mint.error,
+    error: settings.error ?? keyQuery.error,
     retry,
     ready,
     endpoint,

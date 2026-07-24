@@ -37,9 +37,13 @@ export function ReviewCard({
   onToggleSelect,
 }: ReviewCardProps) {
   const [exit, setExit] = useState<ExitDir | null>(null);
+  const resolving = exit !== null;
 
   // Play a brief exit animation, then run the resolution once it's off-screen.
+  // Idempotent: once a dismissal is animating out, later clicks are ignored so a
+  // double-click can't fire the resolve mutation (and its POST) twice.
   const dismiss = (dir: ExitDir, run: () => void) => {
+    if (resolving) return;
     setExit(dir);
     window.setTimeout(run, 280);
   };
@@ -127,6 +131,7 @@ export function ReviewCard({
             <Button
               variant="outline"
               size="sm"
+              disabled={resolving}
               onClick={() => applyResolve({ choice: "source_a" })}
             >
               Keep current
@@ -134,6 +139,7 @@ export function ReviewCard({
             <Button
               variant="outline"
               size="sm"
+              disabled={resolving}
               onClick={() => applyResolve({ choice: "source_b" })}
             >
               Use proposed
@@ -154,7 +160,12 @@ export function ReviewCard({
           </div>
         ) : (
           <div className="ml-auto flex flex-wrap gap-2.5">
-            <Button variant="outline" size="sm" onClick={() => act("reject")}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resolving}
+              onClick={() => act("reject")}
+            >
               <AppIcon name="close" size={15} />
               Reject
             </Button>
@@ -170,6 +181,7 @@ export function ReviewCard({
             />
             <Button
               size="sm"
+              disabled={resolving}
               className="bg-green text-white shadow-soft-1 hover:bg-green/90"
               onClick={() => act("approve")}
             >

@@ -14,11 +14,33 @@ import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { SOURCES } from "@/constants/sources";
 import { SourceActivityRow, useSourceActivity } from "@/features/sources";
+import type { SourceId } from "@/types/common";
 
 import { KpiTile } from "../components/KpiTile";
 import { Panel } from "../components/Panel";
 import { useDashboardOutlet } from "../hooks/useDashboardOutlet";
 import { useOverview } from "../hooks/useOverview";
+
+/** A provider's inline brand icon, or a neutral glyph when a row has no
+ * attributed source (the payload allows a null `sourceProvider`). */
+function SourceGlyph({ id, size }: { id: SourceId | null; size: number }) {
+  if (id) return <SourceIcon id={id} size={size} branded />;
+  return (
+    <span className="grid shrink-0 place-items-center text-ink-3" style={{ width: size, height: size }}>
+      <AppIcon name="sparkles" size={size} />
+    </span>
+  );
+}
+
+/** Panel-tile variant of {@link SourceGlyph} for the review preview. */
+function SourceTileGlyph({ id }: { id: SourceId | null }) {
+  if (id) return <SourceTile id={id} size={34} iconSize={18} />;
+  return (
+    <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px] bg-cream text-ink-3">
+      <AppIcon name="sparkles" size={18} />
+    </span>
+  );
+}
 
 /** Dashboard home — mission-control overview (prototype `BrainPage`). */
 export function OverviewPage() {
@@ -29,6 +51,7 @@ export function OverviewPage() {
     firstName,
     workspaceName,
     syncLabel,
+    syncTone,
     kpis,
     reviews,
     recentDecisions,
@@ -87,9 +110,9 @@ export function OverviewPage() {
         </div>
         {syncLabel && (
           <StatusIndicator
-            tone="live"
+            tone={syncTone}
             label={syncLabel}
-            pulse
+            pulse={syncTone === "live"}
             className="ml-auto"
           />
         )}
@@ -166,13 +189,14 @@ export function OverviewPage() {
                     i ? "border-t border-line-soft" : ""
                   }`}
                 >
-                  <SourceTile id={review.src} size={34} iconSize={18} />
+                  <SourceTileGlyph id={review.src} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold tracking-[-0.01em] text-ink">
                       {review.title}
                     </div>
                     <div className="mt-0.5 text-[12.5px] text-ink-3">
-                      {review.kind} · {SOURCES[review.src].name}
+                      {review.kind}
+                      {review.src ? ` · ${SOURCES[review.src].name}` : ""}
                     </div>
                   </div>
                   <Badge variant="outline" className="shrink-0">
@@ -203,7 +227,7 @@ export function OverviewPage() {
                     i ? "border-t border-line-soft" : ""
                   }`}
                 >
-                  <SourceIcon id={decision.src} size={18} branded />
+                  <SourceGlyph id={decision.src} size={18} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold tracking-[-0.01em] text-ink">
                       {decision.title}
@@ -264,7 +288,7 @@ export function OverviewPage() {
                       {source.sync}
                     </span>
                   )}
-                  <StatusIndicator tone="live" pulse />
+                  <StatusIndicator tone={source.tone} pulse={source.tone === "live"} />
                 </div>
               ))}
             </div>
@@ -280,7 +304,7 @@ export function OverviewPage() {
                   }`}
                 >
                   <span className="mt-px">
-                    <SourceIcon id={item.src} size={17} branded />
+                    <SourceGlyph id={item.src} size={17} />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="text-[13px] font-semibold tracking-[-0.01em] text-ink">
