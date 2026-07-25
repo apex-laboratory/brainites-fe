@@ -1,3 +1,4 @@
+export { useActivityFeed, type ActivityFeedItem } from "./useActivityFeed";
 export { useSidebarState, type SidebarState } from "./useSidebarState";
 export { useDashboardNav, type DashboardNav } from "./useDashboardNav";
 export {

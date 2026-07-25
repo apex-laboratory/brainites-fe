@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
@@ -16,6 +17,7 @@ import { SOURCES } from "@/constants/sources";
 import { SourceActivityRow, useSourceActivity } from "@/features/sources";
 import type { SourceId } from "@/types/common";
 
+import { ActivityFeedDialog } from "../components/ActivityFeedDialog";
 import { KpiTile } from "../components/KpiTile";
 import { Panel } from "../components/Panel";
 import { useDashboardOutlet } from "../hooks/useDashboardOutlet";
@@ -35,6 +37,7 @@ function SourceGlyph({ id, size }: { id: SourceId | null; size: number }) {
 /** Dashboard home — mission-control overview (prototype `BrainPage`). */
 export function OverviewPage() {
   const navigate = useNavigate();
+  const [activityOpen, setActivityOpen] = useState(false);
   const { askBrain } = useDashboardOutlet();
   const {
     greeting,
@@ -284,7 +287,11 @@ export function OverviewPage() {
             </div>
           </Panel>
 
-          <Panel title="Activity">
+          <Panel
+            title="Activity"
+            action="View all"
+            onAction={() => setActivityOpen(true)}
+          >
             <div className="flex flex-col">
               {activity.map((item, i) => (
                 <div
@@ -313,6 +320,11 @@ export function OverviewPage() {
           </Panel>
         </div>
       </div>
+
+      <ActivityFeedDialog
+        open={activityOpen}
+        onClose={() => setActivityOpen(false)}
+      />
     </div>
   );
 }
