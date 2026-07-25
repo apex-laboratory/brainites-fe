@@ -47,6 +47,43 @@ function mapReview(r: ReviewOut): Review {
   };
 }
 
+/** The queue-cache operations every resolution path shares. */
+interface QueueCache {
+  remove: (ids: string[]) => Promise<OptimisticSnapshot<ReviewOut>>;
+  rollback: (context: OptimisticSnapshot<ReviewOut> | undefined) => void;
+  invalidate: () => Promise<void>;
+}
+
+/**
+ * One resolution mutation.
+ *
+ * Approve, reject, write and bulk-approve are the same mutation pointed at
+ * different endpoints: drop the affected rows from the queue immediately,
+ * restore them if the request fails, refetch either way. Only the request, the
+ * ids it touches, and the two strings actually differ — so those are the
+ * parameters, and the optimistic contract has one definition rather than four.
+ */
+function useResolution<V, R>(
+  cache: QueueCache,
+  options: {
+    mutationFn: (variables: V) => Promise<R>;
+    /** Which queue rows this call resolves. */
+    ids: (variables: V) => string[];
+    /** Success toast copy, from the result and what was sent. */
+    onDone: (result: R, variables: V) => string;
+    errorMessage: string;
+  },
+) {
+  return useMutation<R, Error, V, OptimisticSnapshot<ReviewOut>>({
+    mutationFn: options.mutationFn,
+    onMutate: (variables) => cache.remove(options.ids(variables)),
+    onSuccess: (result, variables) => toast.success(options.onDone(result, variables)),
+    onError: (_err, _vars, context) => cache.rollback(context),
+    onSettled: () => cache.invalidate(),
+    meta: { errorMessage: options.errorMessage },
+  });
+}
+
 /**
  * Owns the review queue against the real API: lists pending reviews, tracks the
  * approve/reject totals from `/stats`, and resolves items with an optimistic
@@ -82,66 +119,52 @@ export function useReviews() {
 
   // Optimistic removal shared by every resolution path: drop the given ids from
   // the pending list, snapshotting for rollback on failure.
-  const removeFromQueue = (ids: string[]) =>
-    optimisticRemove<ReviewOut>(queryClient, listKey, ids);
-  const rollback = (context: OptimisticSnapshot<ReviewOut> | undefined) =>
-    rollbackRemove(queryClient, listKey, context);
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) });
+  const cache: QueueCache = {
+    remove: (ids) => optimisticRemove<ReviewOut>(queryClient, listKey, ids),
+    rollback: (context) => rollbackRemove(queryClient, listKey, context),
+    invalidate: () =>
+      queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) }),
+  };
 
-  const resolve = useMutation({
+  const resolve = useResolution(cache, {
     mutationFn: ({ id, verdict }: { id: string; verdict: ReviewVerdict }) =>
       verdict === "approve" ? reviewsApi.approve(id) : reviewsApi.reject(id),
-    onMutate: ({ id }) => removeFromQueue([id]),
-    onSuccess: (_result, { verdict }) => {
-      toast.success(
-        verdict === "approve"
-          ? "Approved · merged into the brain"
-          : "Rejected · change discarded",
-      );
-    },
-    onError: (_err, _vars, context) => rollback(context),
-    onSettled: invalidate,
-    meta: { errorMessage: "Couldn't record that review" },
+    ids: ({ id }) => [id],
+    onDone: (_result, { verdict }) =>
+      verdict === "approve"
+        ? "Approved · merged into the brain"
+        : "Rejected · change discarded",
+    errorMessage: "Couldn't record that review",
   });
 
   // Reviewer authors the correct skill logic directly (POST /reviews/{id}/write).
-  const writeMut = useMutation({
+  const writeMut = useResolution(cache, {
     mutationFn: ({ id, body }: { id: string; body: WriteReviewBody }) =>
       reviewsApi.write(id, body),
-    onMutate: ({ id }) => removeFromQueue([id]),
-    onSuccess: () => toast.success("Correction published · confidence 1.0"),
-    onError: (_err, _vars, context) => rollback(context),
-    onSettled: invalidate,
-    meta: { errorMessage: "Couldn't publish the correction" },
+    ids: ({ id }) => [id],
+    onDone: () => "Correction published · confidence 1.0",
+    errorMessage: "Couldn't publish the correction",
   });
 
   // Resolve a contradiction card (POST /reviews/{id}/resolve).
-  const contradictionMut = useMutation({
+  const contradictionMut = useResolution(cache, {
     mutationFn: ({ id, body }: { id: string; body: ResolveContradictionBody }) =>
       reviewsApi.resolve(id, body),
-    onMutate: ({ id }) => removeFromQueue([id]),
-    onSuccess: () => toast.success("Contradiction resolved"),
-    onError: (_err, _vars, context) => rollback(context),
-    onSettled: invalidate,
-    meta: { errorMessage: "Couldn't resolve the contradiction" },
+    ids: ({ id }) => [id],
+    onDone: () => "Contradiction resolved",
+    errorMessage: "Couldn't resolve the contradiction",
   });
 
   // Approve many sweep-sourced reviews at once (POST /reviews/bulk-approve).
-  const bulkMut = useMutation({
+  const bulkMut = useResolution(cache, {
     mutationFn: ({ ids, comment }: { ids: string[]; comment?: string }) =>
       reviewsApi.bulkApprove(ids, comment),
-    onMutate: ({ ids }) => removeFromQueue(ids),
-    onSuccess: (result) => {
-      toast.success(
-        result.skipped > 0
-          ? `Approved ${result.approved} · skipped ${result.skipped}`
-          : `Approved ${result.approved}`,
-      );
-    },
-    onError: (_err, _vars, context) => rollback(context),
-    onSettled: invalidate,
-    meta: { errorMessage: "Couldn't approve those reviews" },
+    ids: ({ ids }) => ids,
+    onDone: (result) =>
+      result.skipped > 0
+        ? `Approved ${result.approved} · skipped ${result.skipped}`
+        : `Approved ${result.approved}`,
+    errorMessage: "Couldn't approve those reviews",
   });
 
   const approve = useCallback(
