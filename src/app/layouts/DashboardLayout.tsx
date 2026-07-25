@@ -33,13 +33,18 @@ export function DashboardLayout() {
   const commandPalette = useDisclosure();
   const chat = useBrainChat();
 
+  // `chat` is a fresh object each render; `send` is the only member used here
+  // and it is stable, which keeps the global keydown listener in
+  // useDashboardShortcuts from being torn down and re-added every render.
+  const { send } = chat;
+
   /** Open the brain chat tab, optionally seeding it with a question. */
   const askBrain = useCallback(
     (question?: string) => {
       navigate(ROUTES.chat);
-      if (question) chat.send(question);
+      if (question) send(question);
     },
-    [navigate, chat]
+    [navigate, send]
   );
 
   useDashboardShortcuts({

@@ -167,26 +167,34 @@ export function useReviews() {
     errorMessage: "Couldn't approve those reviews",
   });
 
+  // Depend on `mutate`, not the mutation: useMutation returns a new object every
+  // render, so listing the mutation itself would rebuild these on every render —
+  // the exact thing the useCallback is there to prevent. `mutate` is stable.
+  const { mutate: resolveMutate } = resolve;
+  const { mutate: writeMutate } = writeMut;
+  const { mutate: contradictionMutate } = contradictionMut;
+  const { mutate: bulkMutate } = bulkMut;
+
   const approve = useCallback(
-    (id: string) => resolve.mutate({ id, verdict: "approve" }),
-    [resolve],
+    (id: string) => resolveMutate({ id, verdict: "approve" }),
+    [resolveMutate],
   );
   const reject = useCallback(
-    (id: string) => resolve.mutate({ id, verdict: "reject" }),
-    [resolve],
+    (id: string) => resolveMutate({ id, verdict: "reject" }),
+    [resolveMutate],
   );
   const write = useCallback(
-    (id: string, body: WriteReviewBody) => writeMut.mutate({ id, body }),
-    [writeMut],
+    (id: string, body: WriteReviewBody) => writeMutate({ id, body }),
+    [writeMutate],
   );
   const resolveContradiction = useCallback(
     (id: string, body: ResolveContradictionBody) =>
-      contradictionMut.mutate({ id, body }),
-    [contradictionMut],
+      contradictionMutate({ id, body }),
+    [contradictionMutate],
   );
   const bulkApprove = useCallback(
-    (ids: string[], comment?: string) => bulkMut.mutate({ ids, comment }),
-    [bulkMut],
+    (ids: string[], comment?: string) => bulkMutate({ ids, comment }),
+    [bulkMutate],
   );
 
   return {

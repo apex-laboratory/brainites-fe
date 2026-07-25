@@ -130,14 +130,19 @@ export function useBrainChat(): BrainChatState {
         "The brain isn't ready to answer yet.")
       : null;
 
+  // `ask` is a fresh object every render; `ask.mutate` is stable. Depending on
+  // the former made `send` — and every consumer memo downstream of it — churn on
+  // every render.
+  const { mutate: askBrain } = ask;
+
   const send = useCallback(
     (text: string) => {
       const question = text.trim();
       if (!question || typing || !ready) return;
       setMessages((current) => [...current, { role: "you", text: question }]);
-      ask.mutate(question);
+      askBrain(question);
     },
-    [ask, typing, ready],
+    [askBrain, typing, ready],
   );
 
   return {
