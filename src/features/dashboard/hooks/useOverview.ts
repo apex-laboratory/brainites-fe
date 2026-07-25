@@ -5,6 +5,7 @@ import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import type { AppIconName, StatusTone } from "@/components/shared";
 import { asSourceId, SOURCES, type SourceMeta } from "@/constants/sources";
 import type { SourceId } from "@/types/common";
+import { compactMap } from "@/utils/array";
 import { formatRelativeTime } from "@/utils/date";
 
 import type { KpiTileData } from "../components/KpiTile";
@@ -93,17 +94,15 @@ function mapSourceHealth(items: Overview["sourceHealth"], now: number): Overview
   // schema), so an unrecognized one is real drift and is dropped — its brand
   // tile can't render without `SOURCES[id]`. The dot tone comes from the row's
   // own `syncStatus`, never a hardcoded green.
-  return items.flatMap((s) => {
+  return compactMap(items, (s) => {
     const src = asSourceId(s.provider);
-    if (!src) return [];
-    return [
-      {
-        meta: SOURCES[src],
-        pending: s.pendingItems,
-        sync: formatRelativeTime(s.lastSyncedAt, now) ?? s.extractedLabel ?? "—",
-        tone: syncTone(s.syncStatus),
-      },
-    ];
+    if (!src) return null;
+    return {
+      meta: SOURCES[src],
+      pending: s.pendingItems,
+      sync: formatRelativeTime(s.lastSyncedAt, now) ?? s.extractedLabel ?? "—",
+      tone: syncTone(s.syncStatus),
+    };
   });
 }
 

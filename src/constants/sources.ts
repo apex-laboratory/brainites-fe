@@ -1,4 +1,5 @@
 import type { SourceId } from "@/types/common";
+import { compactMap } from "@/utils/array";
 
 export type SourceMeta = {
   id: SourceId;
@@ -33,12 +34,7 @@ export function asSourceId(provider: string | null | undefined): SourceId | null
 /** List form of {@link asSourceId}: narrow a provider array, dropping unknowns
  * and de-duplicating (so a source lineage never shows the same icon twice). */
 export function asSourceIds(providers: readonly (string | null | undefined)[]): SourceId[] {
-  const seen = new Set<SourceId>();
-  for (const p of providers) {
-    const id = asSourceId(p);
-    if (id) seen.add(id);
-  }
-  return [...seen];
+  return [...new Set(compactMap(providers, asSourceId))];
 }
 
 export const SOURCE_ORDER: SourceId[] = [
