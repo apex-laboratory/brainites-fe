@@ -29,7 +29,9 @@ export function useDisconnectSource() {
     // State only — the toast is the global handler's job (see `meta`).
     onError: (_error, _sourceId, context) => rollbackRemove(queryClient, key, context),
 
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+    // `exact`: the list key is also a prefix of every channels key, and the
+    // disconnected source's channels don't need refetching — it's gone.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: key, exact: true }),
 
     meta: { errorMessage: "Couldn't disconnect that source" },
   });

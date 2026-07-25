@@ -67,8 +67,14 @@ export function useSourceChannels(sourceId: string | null) {
       // The PATCH returns the full persisted list — seed the cache with it
       // rather than triggering another round trip.
       queryClient.setQueryData(sourceKeys.channels(workspaceId, sourceId as string), saved);
-      // Channel counts on the source cards are now stale.
-      void queryClient.invalidateQueries({ queryKey: sourceKeys.all(workspaceId) });
+      // Channel counts on the source cards are now stale. `exact` matters:
+      // sourceKeys.all is a *prefix* of sourceKeys.channels, so without it this
+      // would invalidate the channels query we just seeded — which is active
+      // while the dialog is open, and would refetch immediately.
+      void queryClient.invalidateQueries({
+        queryKey: sourceKeys.all(workspaceId),
+        exact: true,
+      });
       reset();
       toast.success("Scope updated");
     },
