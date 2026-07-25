@@ -1,35 +1,49 @@
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { AppIcon } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 
-export interface SetRowProps {
+type SetRowBase = {
   label: string;
+  /** The displayed value. Server state — the row never shadows it. */
   value: string;
   /** Render the value in the monospace font (URLs, ids). */
   mono?: boolean;
-  /** When false, the row is read-only (no Edit affordance). */
-  editable?: boolean;
-  /**
-   * Persist the edited value. May be async; if it rejects the editor stays open
-   * (the caller's mutation surfaces the error toast). When omitted, the row
-   * just updates locally with a success toast.
-   */
-  onSave?: (value: string) => Promise<void> | void;
-}
+};
 
-/** A label/value settings row with inline editing (prototype `SetRow`). */
+/**
+ * An editable row must be able to persist; a read-only one has nothing to save.
+ * Expressed as a union so the invalid pairing can't be written.
+ */
+export type SetRowProps = SetRowBase &
+  (
+    | {
+        editable?: true;
+        /**
+         * Persist the edited value. May be async; if it rejects the editor stays
+         * open (the caller's mutation surfaces the error toast).
+         */
+        onSave: (value: string) => Promise<void> | void;
+      }
+    | { editable: false; onSave?: never }
+  );
+
+/**
+ * A label/value settings row with inline editing (prototype `SetRow`).
+ *
+ * Controlled: the row owns only the *draft*, and always displays `value` from
+ * props. The saved value therefore comes from the settings query — including any
+ * normalization the backend applied — rather than from what the user typed.
+ */
 export function SetRow({ label, value, mono, editable = true, onSave }: SetRowProps) {
-  const [current, setCurrent] = useState(value);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const [saving, setSaving] = useState(false);
 
   const startEdit = () => {
-    setDraft(current);
+    setDraft(value);
     setEditing(true);
   };
 
@@ -37,18 +51,14 @@ export function SetRow({ label, value, mono, editable = true, onSave }: SetRowPr
 
   const save = async () => {
     const next = draft.trim();
-    if (!next || next === current) {
+    if (!next || next === value) {
       setEditing(false);
       return;
     }
     try {
-      if (onSave) {
-        setSaving(true);
-        await onSave(next);
-      }
-      setCurrent(next);
+      setSaving(true);
+      await onSave?.(next);
       setEditing(false);
-      if (!onSave) toast.success(`${label} updated`);
     } catch {
       // Mutation already toasted the failure; keep the editor open for a retry.
     } finally {
@@ -91,7 +101,7 @@ export function SetRow({ label, value, mono, editable = true, onSave }: SetRowPr
               mono && "font-mono"
             )}
           >
-            {current || "—"}
+            {value || "—"}
           </span>
           {editable && (
             <Button variant="ghost" size="sm" className="ml-auto" onClick={startEdit}>
