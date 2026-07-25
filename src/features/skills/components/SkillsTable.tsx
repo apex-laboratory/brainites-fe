@@ -1,5 +1,3 @@
-import { toast } from "sonner";
-
 import {
   AppIcon,
   SectionLabel,
@@ -20,12 +18,15 @@ export interface SkillsTableProps {
   skills: Skill[];
   /** Shown when there are no rows (differs for browse vs. search). */
   emptyLabel?: string;
+  /** Open a row's full body + version history. */
+  onInspect: (skillId: string, skillName: string) => void;
 }
 
 /** Dense skills registry table built on a CSS grid (prototype `SkillsPage`). */
 export function SkillsTable({
   skills,
   emptyLabel = "No skills to show yet.",
+  onInspect,
 }: SkillsTableProps) {
   return (
     <Card className="overflow-hidden">
@@ -106,18 +107,12 @@ export function SkillsTable({
                 <StatusBadge status={skill.status} />
                 <button
                   type="button"
-                  aria-label={`View ${skill.name} diff`}
-                  onClick={() =>
-                    toast.info(`${skill.name} ${skill.v}`, {
-                      description:
-                        skill.calls && skill.updated
-                          ? `Last updated ${skill.updated} · ${skill.calls} calls in 30d.`
-                          : skill.similarity !== undefined
-                            ? `${Math.round(skill.similarity * 100)}% match for your search.`
-                            : "Published skill.",
-                    })
-                  }
-                  className="grid size-7 place-items-center justify-self-end rounded-md text-ink-3 transition-colors hover:bg-cream hover:text-ink"
+                  aria-label={`View ${skill.name} details and version history`}
+                  // A row without an id can't be looked up — the browse and
+                  // search schemas both carry one, so this only guards the type.
+                  disabled={!skill.id}
+                  onClick={() => skill.id && onInspect(skill.id, skill.name)}
+                  className="grid size-7 place-items-center justify-self-end rounded-md text-ink-3 transition-colors hover:bg-cream hover:text-ink disabled:opacity-40"
                 >
                   <AppIcon name="diff" size={15} />
                 </button>
