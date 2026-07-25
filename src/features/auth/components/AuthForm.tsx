@@ -8,7 +8,7 @@ import { BRAND } from "@/constants/brand";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useAuthMode } from "@/features/auth/hooks/useAuthMode";
 import { EmailSchema } from "@/features/auth/api";
-import { isApiError } from "@/lib/api";
+import { isApiError, type ApiErrorCode } from "@/lib/api";
 
 /**
  * Passwordless email auth. Email + "Continue" runs signup or signin (per the
@@ -159,25 +159,24 @@ export function AuthForm() {
   );
 }
 
+/** Friendly copy per error code. `validation_error` is handled separately since
+ * it reads the server's field message; anything unlisted falls back to
+ * `err.message`. Adding a code is a row, not a branch. */
+const AUTH_ERROR_COPY: Partial<Record<ApiErrorCode, string>> = {
+  conflict: "That email is already registered. Try signing in instead.",
+  not_found: "No account found for that email. Create one to get started.",
+  rate_limited: "Too many attempts. Please wait a moment and try again.",
+  network_error: "Couldn't reach the server. Check your connection and try again.",
+  timeout: "Couldn't reach the server. Check your connection and try again.",
+};
+
 /** Map an auth failure to a friendly, mode-aware message. */
 function resolveAuthError(err: unknown, isSignup: boolean): string {
   if (isApiError(err)) {
-    if (err.code === "conflict") {
-      return "That email is already registered. Try signing in instead.";
-    }
-    if (err.code === "not_found") {
-      return "No account found for that email. Create one to get started.";
-    }
     if (err.code === "validation_error") {
       return err.details?.[0]?.message ?? "Please check your email and try again.";
     }
-    if (err.code === "rate_limited") {
-      return "Too many attempts. Please wait a moment and try again.";
-    }
-    if (err.code === "network_error" || err.code === "timeout") {
-      return "Couldn't reach the server. Check your connection and try again.";
-    }
-    return err.message;
+    return AUTH_ERROR_COPY[err.code] ?? err.message;
   }
   return isSignup
     ? "Couldn't create your account. Please try again."

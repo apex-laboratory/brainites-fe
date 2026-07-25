@@ -2,8 +2,7 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { SOURCES } from "@/constants/sources";
-import type { SourceId } from "@/types/common";
+import { asSourceId } from "@/constants/sources";
 import { formatCompact } from "@/utils/format";
 import { formatRelativeTime } from "@/utils/date";
 
@@ -11,10 +10,6 @@ import { decisionKeys, decisionsApi, type DecisionOut } from "../api";
 import type { Decision, DecisionStatus } from "../types";
 
 const PAGE_SIZE = 50;
-
-function asSourceId(provider: string | null | undefined): SourceId | null {
-  return provider && provider in SOURCES ? (provider as SourceId) : null;
-}
 
 /** Coerce the backend status onto a known filterable status; default `review`. */
 function asStatus(status: string): DecisionStatus {

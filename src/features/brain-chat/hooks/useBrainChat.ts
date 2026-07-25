@@ -3,9 +3,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { useAuth, useWorkspaceId } from "@/app/providers/AuthProvider";
 import { BRAND } from "@/constants/brand";
-import { SOURCES } from "@/constants/sources";
+import { asSourceId } from "@/constants/sources";
 import { isApiError } from "@/lib/api";
-import type { SourceId } from "@/types/common";
 
 import { brainApi, brainKeys, type BrainQueryResponse, type SourceCitation } from "../api";
 import { CHAT_SUGGESTIONS } from "../data/brain-answers";
@@ -19,11 +18,6 @@ function greeting(firstName: string, workspaceName: string): ChatMessage {
     sources: [],
     conf: null,
   };
-}
-
-/** Narrow a backend provider id to one the UI has an icon for. */
-function asSourceId(provider: string | null | undefined): SourceId | null {
-  return provider && provider in SOURCES ? (provider as SourceId) : null;
 }
 
 function mapCitation(c: SourceCitation): AnswerSource {

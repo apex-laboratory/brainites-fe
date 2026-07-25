@@ -7,7 +7,6 @@ import {
   apiKeysApi,
   useSettings,
   type ApiKeyCreated,
-  type ApiKeyScope,
 } from "@/features/settings";
 import {
   AGENT_SCOPES,
@@ -54,7 +53,7 @@ export function useIntegration() {
     queryFn: () =>
       apiKeysApi.create(workspaceId, {
         name: "Onboarding agent key",
-        scopes: AGENT_SCOPES.map((scope) => scope.id as ApiKeyScope),
+        scopes: AGENT_SCOPES.map((scope) => scope.id),
       }),
     enabled: Boolean(workspaceId),
     staleTime: Infinity,

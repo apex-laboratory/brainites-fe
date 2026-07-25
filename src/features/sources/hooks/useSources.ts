@@ -21,8 +21,13 @@ function sumReported(
   return reported.length ? reported.reduce((a, b) => a + b, 0) : null;
 }
 
+/** One definition of "healthy" so the stat strip and the header count can't drift. */
+function countHealthy(sources: Source[]): number {
+  return sources.filter((s) => s.syncStatus === "healthy").length;
+}
+
 function buildStats(sources: Source[]): Stat[] {
-  const healthy = sources.filter((s) => s.syncStatus === "healthy").length;
+  const healthy = countHealthy(sources);
   const scored = sources.map((s) => s.health).filter((h): h is number => h != null);
   const avgHealth = scored.length
     ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length)
@@ -67,9 +72,7 @@ export function useSources() {
 
   const stats = useMemo(() => buildStats(query.data ?? []), [query.data]);
 
-  const healthyCount = sources.filter(
-    ({ source }) => source.syncStatus === "healthy",
-  ).length;
+  const healthyCount = useMemo(() => countHealthy(query.data ?? []), [query.data]);
 
   return { ...query, sources, stats, healthyCount };
 }

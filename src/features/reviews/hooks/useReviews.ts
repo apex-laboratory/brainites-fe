@@ -4,8 +4,7 @@ import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import { isApiError } from "@/lib/api";
-import { SOURCES } from "@/constants/sources";
-import type { SourceId } from "@/types/common";
+import { asSourceId } from "@/constants/sources";
 
 import {
   reviewKeys,
@@ -25,10 +24,6 @@ const KIND_LABEL: Record<string, string> = {
   contradiction: "Contradiction",
   exception: "Exception",
 };
-
-function asSourceId(provider: string | null | undefined): SourceId | null {
-  return provider && provider in SOURCES ? (provider as SourceId) : null;
-}
 
 /** Map the backend `ReviewOut` onto the card's view model, defaulting the many
  * nullable fields so the UI never renders `null`. */

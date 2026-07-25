@@ -5,6 +5,7 @@ import { AppIcon, SourceIcon } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { interactionsApi } from "@/features/skills/api";
 import { isApiError } from "@/lib/api";
+import { formatRelativeTime } from "@/utils/date";
 
 import type { BrainProvenance, Trust } from "../api";
 import type { ChatMessage as ChatMessageType } from "../types";
@@ -128,7 +129,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {actor && (
           <p className="mt-1.5 px-0.5 text-[11.5px] text-ink-4">
             {actor.label} {actor.name}
-            {actor.at && ` · ${new Date(actor.at).toLocaleDateString()}`}
+            {formatRelativeTime(actor.at) && ` · ${formatRelativeTime(actor.at)}`}
           </p>
         )}
       </div>

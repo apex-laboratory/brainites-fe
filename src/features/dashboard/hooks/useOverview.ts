@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import type { AppIconName, StatusTone } from "@/components/shared";
-import { SOURCES, type SourceMeta } from "@/constants/sources";
+import { asSourceId, SOURCES, type SourceMeta } from "@/constants/sources";
 import type { SourceId } from "@/types/common";
 import { formatRelativeTime } from "@/utils/date";
 
@@ -16,12 +16,6 @@ const KPI_ICON: Record<Kpi["id"], AppIconName> = {
   skills: "skills",
   reviews: "review",
 };
-
-/** A backend provider string → a known `SourceId`, or `null` if unrecognized.
- * Keeps the icon/name lookups (`SOURCES[id]`) from ever indexing undefined. */
-function asSourceId(provider: string | null | undefined): SourceId | null {
-  return provider && provider in SOURCES ? (provider as SourceId) : null;
-}
 
 function greetingForHour(hour: number): string {
   if (hour < 12) return "Good morning";

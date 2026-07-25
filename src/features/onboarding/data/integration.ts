@@ -1,9 +1,11 @@
 import { BRAND } from "@/constants/brand";
+import type { ApiKeyScope } from "@/features/settings";
 
-/** A single scope an agent key may be granted. Ids match the backend
- * `ApiKeyScope` literal, so they're sent verbatim when minting the key. */
+/** A single scope an agent key may be granted. `id` is the backend
+ * `ApiKeyScope` literal, so it's sent verbatim (and compiler-checked) when
+ * minting the key. */
 export type IntegrationScope = {
-  id: string;
+  id: ApiKeyScope;
   label: string;
 };
 
@@ -87,10 +89,6 @@ export function buildAgentGuides({
   apiKey,
   slug,
 }: Pick<IntegrationValues, "endpoint" | "apiKey" | "slug">): AgentGuide[] {
-  const ENDPOINT = endpoint;
-  const KEY = apiKey;
-  const SLUG = slug;
-
   return [
     {
       id: "claude-code",
@@ -100,15 +98,15 @@ export function buildAgentGuides({
       blocks: [
         {
           title: "Register the MCP server",
-          code: `claude mcp add --transport http ${SLUG} \\
-  ${ENDPOINT} \\
-  --header "Authorization: Bearer ${KEY}"`,
+          code: `claude mcp add --transport http ${slug} \\
+  ${endpoint} \\
+  --header "Authorization: Bearer ${apiKey}"`,
         },
         {
           title: "Apply the system prompt",
           code: `# Paste the system prompt above into CLAUDE.md,
 # or pass it per-session:
-claude --append-system-prompt "$(cat ${SLUG}-brain.txt)"`,
+claude --append-system-prompt "$(cat ${slug}-brain.txt)"`,
         },
       ],
       promptNote:
@@ -133,9 +131,9 @@ resp = client.beta.messages.create(
     mcp_servers=[
         {
             "type": "url",
-            "url": "${ENDPOINT}",
-            "name": "${SLUG}",
-            "authorization_token": "${KEY}",
+            "url": "${endpoint}",
+            "name": "${slug}",
+            "authorization_token": "${apiKey}",
         }
     ],
     messages=[{"role": "user", "content": "What's our refund policy?"}],
@@ -155,9 +153,9 @@ print(resp.content)`,
       blocks: [
         {
           title: "Codex CLI · ~/.codex/config.toml",
-          code: `[mcp_servers.${SLUG}]
-url = "${ENDPOINT}"
-http_headers = { Authorization = "Bearer ${KEY}" }`,
+          code: `[mcp_servers.${slug}]
+url = "${endpoint}"
+http_headers = { Authorization = "Bearer ${apiKey}" }`,
         },
         {
           title: "Responses API · python",
@@ -171,9 +169,9 @@ resp = client.responses.create(
     tools=[
         {
             "type": "mcp",
-            "server_label": "${SLUG}",
-            "server_url": "${ENDPOINT}",
-            "headers": {"Authorization": "Bearer ${KEY}"},
+            "server_label": "${slug}",
+            "server_url": "${endpoint}",
+            "headers": {"Authorization": "Bearer ${apiKey}"},
             "require_approval": "never",
         }
     ],
@@ -198,10 +196,10 @@ from langchain.chat_models import init_chat_model
 from langgraph.prebuilt import create_react_agent
 
 client = MultiServerMCPClient({
-    "${SLUG}": {
+    "${slug}": {
         "transport": "streamable_http",
-        "url": "${ENDPOINT}",
-        "headers": {"Authorization": "Bearer ${KEY}"},
+        "url": "${endpoint}",
+        "headers": {"Authorization": "Bearer ${apiKey}"},
     }
 })
 
@@ -225,7 +223,7 @@ result = await agent.ainvoke(
       blocks: [
         {
           title: "mcp.json",
-          code: buildClientConfig(ENDPOINT, KEY),
+          code: buildClientConfig(endpoint, apiKey),
         },
       ],
       promptNote:
