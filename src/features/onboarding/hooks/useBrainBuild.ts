@@ -22,8 +22,8 @@ export function useBrainBuild() {
   const start = useMutation({
     mutationFn: () => onboardingApi.startSweep(),
     onSuccess: (sweep) => setSweepId(sweep.id),
-    // Swallow the toast: a failed/empty build shouldn't nag; the step handles it.
-    onError: () => {},
+    // Stay silent: a failed/empty build shouldn't nag; the step handles it.
+    meta: { errorToast: false },
   });
 
   // Fire exactly once. A ref (not deps) guards against StrictMode's double-mount.

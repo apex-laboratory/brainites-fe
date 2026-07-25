@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { isApiError } from "@/lib/api";
 import { asSourceId } from "@/constants/sources";
 
 import {
@@ -104,12 +103,9 @@ export function useReviews() {
           : "Rejected · change discarded",
       );
     },
-    // Overriding onError opts out of the global toast — restore + raise our own.
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't record that review");
-    },
+    onError: (_err, _vars, context) => rollback(context),
     onSettled: invalidate,
+    meta: { errorMessage: "Couldn't record that review" },
   });
 
   // Reviewer authors the correct skill logic directly (POST /reviews/{id}/write).
@@ -118,11 +114,9 @@ export function useReviews() {
       reviewsApi.write(id, body),
     onMutate: ({ id }) => removeFromQueue([id]),
     onSuccess: () => toast.success("Correction published · confidence 1.0"),
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't publish the correction");
-    },
+    onError: (_err, _vars, context) => rollback(context),
     onSettled: invalidate,
+    meta: { errorMessage: "Couldn't publish the correction" },
   });
 
   // Resolve a contradiction card (POST /reviews/{id}/resolve).
@@ -131,11 +125,9 @@ export function useReviews() {
       reviewsApi.resolve(id, body),
     onMutate: ({ id }) => removeFromQueue([id]),
     onSuccess: () => toast.success("Contradiction resolved"),
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't resolve the contradiction");
-    },
+    onError: (_err, _vars, context) => rollback(context),
     onSettled: invalidate,
+    meta: { errorMessage: "Couldn't resolve the contradiction" },
   });
 
   // Approve many sweep-sourced reviews at once (POST /reviews/bulk-approve).
@@ -150,11 +142,9 @@ export function useReviews() {
           : `Approved ${result.approved}`,
       );
     },
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't approve those reviews");
-    },
+    onError: (_err, _vars, context) => rollback(context),
     onSettled: invalidate,
+    meta: { errorMessage: "Couldn't approve those reviews" },
   });
 
   const approve = useCallback(

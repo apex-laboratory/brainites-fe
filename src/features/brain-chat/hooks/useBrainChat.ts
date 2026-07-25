@@ -115,6 +115,8 @@ export function useBrainChat(): BrainChatState {
         },
       ]);
     },
+    // The failure is already rendered as a bubble in the transcript.
+    meta: { errorToast: false },
   });
 
   const typing = ask.isPending;

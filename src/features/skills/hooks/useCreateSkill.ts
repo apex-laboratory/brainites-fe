@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { isApiError } from "@/lib/api";
 
 import { skillKeys, skillsApi, type CreateSkillBody } from "../api";
 
@@ -24,17 +23,12 @@ export function useCreateSkill() {
       });
       queryClient.invalidateQueries({ queryKey: skillKeys.all(workspaceId) });
     },
-    // Override onError to opt out of the global toast with a tailored message.
-    onError: (err) => {
-      toast.error(
-        isApiError(err) && err.code === "forbidden"
-          ? "Creating skills is admin-only."
-          : isApiError(err) && err.code === "conflict"
-            ? "A skill with that name already exists."
-            : isApiError(err)
-              ? err.message
-              : "Couldn't create the skill.",
-      );
+    meta: {
+      errorMessage: "Couldn't create the skill.",
+      errorMessages: {
+        forbidden: "Creating skills is admin-only.",
+        conflict: "A skill with that name already exists.",
+      },
     },
   });
 }

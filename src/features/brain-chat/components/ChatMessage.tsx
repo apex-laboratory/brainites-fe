@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { AppIcon, SourceIcon } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { interactionsApi } from "@/features/skills/api";
-import { isApiError } from "@/lib/api";
 import { formatRelativeTime } from "@/utils/date";
 
 import type { BrainProvenance, Trust } from "../api";
@@ -43,8 +42,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       toast.success("Thanks — flagged for review", {
         description: "This answer's confidence was lowered and it may open a review item.",
       }),
-    onError: (error) =>
-      toast.error(isApiError(error) ? error.message : "Couldn't record that feedback."),
+    meta: { errorMessage: "Couldn't record that feedback." },
   });
 
   if (message.role === "you") {
