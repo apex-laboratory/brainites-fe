@@ -1,8 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { queryClient } from "@/lib/api";
 
 import {
   settingsApi,
@@ -18,6 +17,7 @@ import {
  */
 export function useSettings() {
   const workspaceId = useWorkspaceId();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: settingsKeys.settings(workspaceId),
