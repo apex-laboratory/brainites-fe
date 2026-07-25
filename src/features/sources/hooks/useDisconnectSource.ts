@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
+import { optimisticRemove, rollbackRemove } from "@/lib/api";
 
 import { sourceKeys, sourcesApi, type Source } from "../api";
 
@@ -19,26 +20,14 @@ export function useDisconnectSource() {
   return useMutation({
     mutationFn: (sourceId: string) => sourcesApi.disconnect(sourceId),
 
-    onMutate: async (sourceId) => {
-      // Stop an in-flight list refetch from clobbering the optimistic write.
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<Source[]>(key);
-
-      queryClient.setQueryData<Source[]>(key, (current) =>
-        current?.filter((source) => source.id !== sourceId),
-      );
-
-      return { previous };
-    },
+    onMutate: (sourceId) => optimisticRemove<Source>(queryClient, key, [sourceId]),
 
     onSuccess: () => {
       toast.success("Source disconnected");
     },
 
     // State only — the toast is the global handler's job (see `meta`).
-    onError: (_error, _sourceId, context) => {
-      if (context?.previous) queryClient.setQueryData(key, context.previous);
-    },
+    onError: (_error, _sourceId, context) => rollbackRemove(queryClient, key, context),
 
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
 

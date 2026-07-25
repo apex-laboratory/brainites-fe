@@ -8,7 +8,12 @@ export {
 } from "./client";
 export { IsoDateTimeSchema } from "./schemas";
 export { ApiError, isApiError, type ApiErrorCode, type ApiErrorDetail } from "./errors";
-export { queryClient } from "./query-client";
+export { queryClient, type MutationErrorMeta } from "./query-client";
+export {
+  optimisticRemove,
+  rollbackRemove,
+  type OptimisticSnapshot,
+} from "./optimistic";
 export {
   clearTokens,
   hasSession,

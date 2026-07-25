@@ -4,6 +4,11 @@ import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import { asSourceId } from "@/constants/sources";
+import {
+  optimisticRemove,
+  rollbackRemove,
+  type OptimisticSnapshot,
+} from "@/lib/api";
 
 import {
   reviewKeys,
@@ -77,18 +82,10 @@ export function useReviews() {
 
   // Optimistic removal shared by every resolution path: drop the given ids from
   // the pending list, snapshotting for rollback on failure.
-  const removeFromQueue = async (ids: string[]) => {
-    await queryClient.cancelQueries({ queryKey: listKey });
-    const previous = queryClient.getQueryData<ReviewOut[]>(listKey);
-    const drop = new Set(ids);
-    queryClient.setQueryData<ReviewOut[]>(listKey, (current) =>
-      current?.filter((review) => !drop.has(review.id)),
-    );
-    return { previous };
-  };
-  const rollback = (context: { previous?: ReviewOut[] } | undefined) => {
-    if (context?.previous) queryClient.setQueryData(listKey, context.previous);
-  };
+  const removeFromQueue = (ids: string[]) =>
+    optimisticRemove<ReviewOut>(queryClient, listKey, ids);
+  const rollback = (context: OptimisticSnapshot<ReviewOut> | undefined) =>
+    rollbackRemove(queryClient, listKey, context);
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) });
 
