@@ -2,41 +2,12 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { asSourceId } from "@/constants/sources";
-import { formatCompact } from "@/utils/format";
-import { formatRelativeTime } from "@/utils/date";
 
-import { decisionKeys, decisionsApi, type DecisionOut } from "../api";
-import type { Decision, DecisionStatus } from "../types";
+import { decisionKeys, decisionsApi } from "../api";
+import { mapDecision } from "../mappers";
+import type { Decision } from "../types";
 
 const PAGE_SIZE = 50;
-
-/** Coerce the backend status onto a known filterable status; default `review`. */
-function asStatus(status: string): DecisionStatus {
-  return status === "approved" || status === "active" || status === "review"
-    ? status
-    : "review";
-}
-
-/** Map the backend `DecisionOut` onto the page's view model, defaulting the many
- * nullable fields so the UI never renders `null`. */
-function mapDecision(d: DecisionOut): Decision {
-  return {
-    id: d.id,
-    title: d.title,
-    src: asSourceId(d.provider),
-    where: d.location ?? "",
-    status: asStatus(d.status),
-    conf: d.confidence ?? 0,
-    cat: d.category ?? "General",
-    owner: d.owner?.name ?? "Unassigned",
-    oc: d.owner?.avatarColor ?? "#8A8577",
-    uses: formatCompact(d.uses),
-    updated: formatRelativeTime(d.updatedAt) ?? "—",
-    body: d.body ?? "",
-    rule: d.rule ?? "",
-  };
-}
 
 /**
  * Owns the decisions list against `/decisions` — paginated (load-more via

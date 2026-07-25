@@ -1,3 +1,4 @@
+export { useDecision } from "./useDecision";
 export { useDecisions } from "./useDecisions";
 export {
   useDecisionFilters,

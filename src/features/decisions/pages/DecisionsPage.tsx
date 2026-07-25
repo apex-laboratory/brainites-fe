@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { DecisionDetail } from "../components/DecisionDetail";
 import { DecisionRow } from "../components/DecisionRow";
+import { useDecision } from "../hooks/useDecision";
 import { useDecisionFilters } from "../hooks/useDecisionFilters";
 import { useDecisions } from "../hooks/useDecisions";
 import { useSelectedDecision } from "../hooks/useSelectedDecision";
@@ -27,6 +28,8 @@ export function DecisionsPage() {
   } = useDecisions();
   const { filter, setFilter, filtered, options } = useDecisionFilters(decisions);
   const { selectedId, setSelectedId, selected } = useSelectedDecision(filtered);
+  // The list row renders immediately; the detail fetch refines it in place.
+  const { decision: openDecision } = useDecision(selectedId, selected);
 
   const count = decisions.length;
 
@@ -96,7 +99,9 @@ export function DecisionsPage() {
             )}
           </div>
 
-          {selected && <DecisionDetail key={selected.id} decision={selected} />}
+          {openDecision && (
+            <DecisionDetail key={openDecision.id} decision={openDecision} />
+          )}
         </div>
       )}
     </div>
