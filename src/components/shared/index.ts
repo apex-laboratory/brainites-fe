@@ -10,8 +10,10 @@ export {
   EmptyState,
   ErrorState,
   Skeleton,
+  Spinner,
   type EmptyStateProps,
   type ErrorStateProps,
+  type SpinnerProps,
 } from "./QueryState";
 export { SectionLabel } from "./SectionLabel";
 export {

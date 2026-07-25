@@ -1,17 +1,14 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
+import { Spinner } from "@/components/shared";
 import { ROUTES } from "@/constants/routes";
 
 /** Full-screen gate shown while the session is being rehydrated on load. */
 function SessionLoading() {
   return (
-    <div
-      className="grid min-h-full w-full place-items-center bg-ivory"
-      role="status"
-      aria-label="Loading"
-    >
-      <div className="size-6 animate-spin rounded-full border-2 border-line border-t-brand-ink" />
+    <div className="grid min-h-full w-full place-items-center bg-ivory">
+      <Spinner label="Loading" />
     </div>
   );
 }

@@ -2,22 +2,13 @@ import { useEffect } from "react";
 
 import { cn } from "@/utils/cn";
 import { AppIcon } from "@/components/shared/AppIcon";
+import { Spinner } from "@/components/shared/QueryState";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { OnboardingShell } from "@/features/onboarding/components/OnboardingShell";
 import { useBrainBuild } from "@/features/onboarding/hooks/useBrainBuild";
 import { useLearningProgress } from "@/features/onboarding/hooks/useLearningProgress";
 import { LEARNING_STEPS } from "@/features/onboarding/data/onboarding-fixtures";
 import dexterOnline from "@/assets/dexter_online.png";
-
-/** Small spinner for the in-progress checklist item (no inline SVG). */
-function Spinner() {
-  return (
-    <span
-      aria-hidden
-      className="block size-[18px] rounded-full border-2 border-white/30 border-t-white motion-safe:animate-spin"
-    />
-  );
-}
 
 /** Linger on the finished state before advancing to the "all set" screen. */
 const FINISH_HOLD_MS = 700;
@@ -103,7 +94,7 @@ export function StepLearning({ onComplete }: StepLearningProps) {
                           className="text-green-300"
                         />
                       ) : isActive ? (
-                        <Spinner />
+                        <Spinner size={18} tone="light" />
                       ) : (
                         <span className="block size-[14px] rounded-full border-2 border-white/30" />
                       )}
