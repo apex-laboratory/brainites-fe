@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppIcon, SectionLabel, SourceIcon } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,9 @@ import { WriteCorrectionDialog } from "./WriteCorrectionDialog";
 
 /** Which way the card slides as it leaves the queue. */
 type ExitDir = "right" | "left" | "up";
+
+/** Exit animation, landing just inside the card's 300ms transition. */
+const EXIT_MS = 280;
 
 export interface ReviewCardProps {
   review: Review;
@@ -39,14 +42,36 @@ export function ReviewCard({
   const [exit, setExit] = useState<ExitDir | null>(null);
   const resolving = exit !== null;
 
+  /** The resolution waiting on the exit animation, if one is in flight. */
+  const pending = useRef<{ timer: number; run: () => void } | null>(null);
+
   // Play a brief exit animation, then run the resolution once it's off-screen.
   // Idempotent: once a dismissal is animating out, later clicks are ignored so a
   // double-click can't fire the resolve mutation (and its POST) twice.
   const dismiss = (dir: ExitDir, run: () => void) => {
     if (resolving) return;
     setExit(dir);
-    window.setTimeout(run, 280);
+    const timer = window.setTimeout(() => {
+      pending.current = null;
+      run();
+    }, EXIT_MS);
+    pending.current = { timer, run };
   };
+
+  // Unmounting mid-animation (navigating away, the queue refetching underneath
+  // us) makes the animation moot but not the user's decision — so flush the
+  // resolution rather than dropping it on the floor. Cancelling instead would
+  // silently discard an approval the user already clicked.
+  useEffect(
+    () => () => {
+      const inFlight = pending.current;
+      if (!inFlight) return;
+      pending.current = null;
+      window.clearTimeout(inFlight.timer);
+      inFlight.run();
+    },
+    [],
+  );
 
   const act = (verdict: ReviewVerdict) =>
     dismiss(verdict === "approve" ? "right" : "left", () => onResolve(review.id, verdict));
