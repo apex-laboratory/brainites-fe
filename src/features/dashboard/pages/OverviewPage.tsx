@@ -32,16 +32,6 @@ function SourceGlyph({ id, size }: { id: SourceId | null; size: number }) {
   );
 }
 
-/** Panel-tile variant of {@link SourceGlyph} for the review preview. */
-function SourceTileGlyph({ id }: { id: SourceId | null }) {
-  if (id) return <SourceTile id={id} size={34} iconSize={18} />;
-  return (
-    <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px] bg-cream text-ink-3">
-      <AppIcon name="sparkles" size={18} />
-    </span>
-  );
-}
-
 /** Dashboard home — mission-control overview (prototype `BrainPage`). */
 export function OverviewPage() {
   const navigate = useNavigate();
@@ -189,7 +179,7 @@ export function OverviewPage() {
                     i ? "border-t border-line-soft" : ""
                   }`}
                 >
-                  <SourceTileGlyph id={review.src} />
+                  <SourceTile id={review.src} size={34} iconSize={18} />
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold tracking-[-0.01em] text-ink">
                       {review.title}

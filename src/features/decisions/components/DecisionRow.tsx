@@ -1,4 +1,4 @@
-import { AppIcon, SourceTile } from "@/components/shared";
+import { SourceTile } from "@/components/shared";
 import { cn } from "@/utils/cn";
 
 import type { Decision, DecisionStatus } from "../types";
@@ -29,13 +29,7 @@ export function DecisionRow({ decision, active, onClick }: DecisionRowProps) {
           : "border-transparent hover:bg-paper"
       )}
     >
-      {decision.src ? (
-        <SourceTile id={decision.src} size={32} iconSize={17} />
-      ) : (
-        <span className="grid size-8 shrink-0 place-items-center rounded-[9px] bg-cream text-ink-3">
-          <AppIcon name="sparkles" size={17} />
-        </span>
-      )}
+      <SourceTile id={decision.src} size={32} iconSize={17} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold tracking-[-0.01em] text-ink">
           {decision.title}
