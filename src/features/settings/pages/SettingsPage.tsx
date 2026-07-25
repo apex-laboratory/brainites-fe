@@ -4,15 +4,17 @@ import { useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/shared";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { SettingsApiKeys } from "../components/SettingsApiKeys";
 import { SettingsGeneral } from "../components/SettingsGeneral";
 import { SettingsMembers } from "../components/SettingsMembers";
 import { SettingsUsage } from "../components/SettingsUsage";
 
-type SettingsTab = "general" | "members" | "usage";
+type SettingsTab = "general" | "members" | "api-keys" | "usage";
 
 const TABS: { value: SettingsTab; label: string }[] = [
   { value: "general", label: "General" },
   { value: "members", label: "Members" },
+  { value: "api-keys", label: "API keys" },
   { value: "usage", label: "Usage" },
 ];
 
@@ -53,6 +55,9 @@ export function SettingsPage() {
         </TabsContent>
         <TabsContent value="members" className="mt-0">
           <SettingsMembers />
+        </TabsContent>
+        <TabsContent value="api-keys" className="mt-0">
+          <SettingsApiKeys />
         </TabsContent>
         <TabsContent value="usage" className="mt-0">
           <SettingsUsage />

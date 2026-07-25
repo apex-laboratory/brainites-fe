@@ -16,6 +16,21 @@ export const ApiKeyScopeSchema = z.enum([
 ]);
 export type ApiKeyScope = z.infer<typeof ApiKeyScopeSchema>;
 
+/** Every scope, in the order they're offered. */
+export const API_KEY_SCOPES = ApiKeyScopeSchema.options;
+
+/**
+ * Human label per scope, declared next to the enum it describes so the two
+ * can't drift (same arrangement as `ROLE_LABEL`). Both the settings key
+ * manager and the onboarding integrate step read from here.
+ */
+export const SCOPE_LABEL: Record<ApiKeyScope, string> = {
+  "brain:query": "Query the brain",
+  "skills:invoke": "Invoke skills",
+  "sources:read": "Read sources",
+  "decisions:read": "Read decisions",
+};
+
 /** `POST /api-keys` → the created key, including the raw secret (shown once). */
 export const ApiKeyCreatedSchema = z.object({
   id: z.string(),

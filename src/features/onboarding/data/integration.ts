@@ -1,5 +1,5 @@
 import { BRAND } from "@/constants/brand";
-import type { ApiKeyScope } from "@/features/settings";
+import { API_KEY_SCOPES, SCOPE_LABEL, type ApiKeyScope } from "@/features/settings";
 
 /** A single scope an agent key may be granted. `id` is the backend
  * `ApiKeyScope` literal, so it's sent verbatim (and compiler-checked) when
@@ -9,13 +9,12 @@ export type IntegrationScope = {
   label: string;
 };
 
-/** Scopes requested for the agent key created during onboarding. */
-export const AGENT_SCOPES: IntegrationScope[] = [
-  { id: "brain:query", label: "Query the brain" },
-  { id: "skills:invoke", label: "Invoke skills" },
-  { id: "sources:read", label: "Read sources" },
-  { id: "decisions:read", label: "Read decisions" },
-];
+/** Scopes requested for the agent key created during onboarding — currently all
+ * of them, since the onboarding key is the tenant's general-purpose agent key. */
+export const AGENT_SCOPES: IntegrationScope[] = API_KEY_SCOPES.map((id) => ({
+  id,
+  label: SCOPE_LABEL[id],
+}));
 
 /** Values needed to template every copy-paste snippet on the integrate step. */
 export interface IntegrationValues {
