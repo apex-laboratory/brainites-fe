@@ -31,8 +31,10 @@ function maskKey(key: string): string {
  *  - the agent system prompt, MCP client config, and per-framework guides,
  *    templated with the live endpoint + key + workspace slug.
  *
- * Surfaces `isLoading` / `isError` / `retry` so the step can gate on both the
- * settings fetch and the key mint before rendering credentials.
+ * Surfaces `isError` / `retry` so the step can gate on both the settings fetch
+ * and the key mint. There's no separate `isLoading`: "not failed and no
+ * credentials yet" is exactly `!endpoint || !apiKey`, and that form narrows both
+ * to non-null for the caller instead of merely implying it.
  */
 export function useIntegration() {
   const workspaceId = useWorkspaceId();
@@ -79,9 +81,7 @@ export function useIntegration() {
     [endpoint, apiKey, slug],
   );
 
-  const ready = Boolean(endpoint && apiKey);
   const isError = settings.isError || keyQuery.isError;
-  const isLoading = !ready && !isError;
 
   const retry = () => {
     if (settings.isError) void settings.refetch();
@@ -89,11 +89,9 @@ export function useIntegration() {
   };
 
   return {
-    isLoading,
     isError,
     error: settings.error ?? keyQuery.error,
     retry,
-    ready,
     endpoint,
     apiKey,
     maskedKey,
