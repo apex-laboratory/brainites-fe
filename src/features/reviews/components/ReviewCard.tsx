@@ -173,6 +173,7 @@ export function ReviewCard({
               title="Write the authoritative version"
               description="Neither source is right on its own — write the correct logic. It publishes at full confidence."
               defaultValue={review.after}
+              reviewId={review.id}
               submitLabel="Resolve with this"
               onSubmit={(body) => applyResolve({ choice: "write", correction: body })}
               trigger={
@@ -196,6 +197,7 @@ export function ReviewCard({
             </Button>
             <WriteCorrectionDialog
               defaultValue={review.after}
+              reviewId={review.id}
               onSubmit={applyWrite}
               trigger={
                 <Button variant="outline" size="sm">
