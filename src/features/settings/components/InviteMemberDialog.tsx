@@ -1,5 +1,4 @@
 import { type ReactNode, useState } from "react";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,33 +13,38 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/utils/cn";
 
-import type { MemberRole } from "../types";
+import { ROLE_LABEL, type MemberRole } from "../api";
 
-const ROLES: MemberRole[] = ["Viewer", "Editor", "Admin"];
+const ROLES: MemberRole[] = ["viewer", "editor", "admin"];
 
 export interface InviteMemberDialogProps {
   trigger: ReactNode;
+  /** Sends the invite. Rejects → the dialog stays open (error toasted upstream). */
+  onInvite: (email: string, role: MemberRole) => Promise<void>;
+  pending?: boolean;
 }
 
-/** "Invite" dialog: email + role, sends an invitation (simulated). */
-export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
+/** "Invite" dialog: email + role, sends a real invitation via `onInvite`. */
+export function InviteMemberDialog({ trigger, onInvite, pending = false }: InviteMemberDialogProps) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<MemberRole>("Editor");
+  const [role, setRole] = useState<MemberRole>("editor");
 
   const reset = () => {
     setEmail("");
-    setRole("Editor");
+    setRole("editor");
   };
 
-  const submit = () => {
+  const submit = async () => {
     const trimmed = email.trim();
     if (!trimmed) return;
-    toast.success("Invitation sent", {
-      description: `${trimmed} was invited as ${role}.`,
-    });
-    reset();
-    setOpen(false);
+    try {
+      await onInvite(trimmed, role);
+      reset();
+      setOpen(false);
+    } catch {
+      // Upstream mutation surfaces the error toast; keep the dialog open.
+    }
   };
 
   return (
@@ -64,7 +68,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
           className="flex flex-col gap-4"
           onSubmit={(event) => {
             event.preventDefault();
-            submit();
+            void submit();
           }}
         >
           <div className="flex flex-col gap-1.5">
@@ -77,7 +81,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
               autoFocus
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="teammate@riverline.io"
+              placeholder="teammate@company.com"
             />
           </div>
 
@@ -97,7 +101,7 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
                       on ? "border-primary bg-brand-soft" : "border-line-2 hover:border-ink-4"
                     )}
                   >
-                    {option}
+                    {ROLE_LABEL[option]}
                   </button>
                 );
               })}
@@ -105,8 +109,8 @@ export function InviteMemberDialog({ trigger }: InviteMemberDialogProps) {
           </div>
 
           <DialogFooter>
-            <Button type="submit" variant="solid" disabled={!email.trim()}>
-              Send invite
+            <Button type="submit" variant="solid" disabled={!email.trim() || pending}>
+              {pending ? "Sending…" : "Send invite"}
             </Button>
           </DialogFooter>
         </form>

@@ -2,21 +2,13 @@ import { useEffect } from "react";
 
 import { cn } from "@/utils/cn";
 import { AppIcon } from "@/components/shared/AppIcon";
+import { Spinner } from "@/components/shared/QueryState";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { OnboardingShell } from "@/features/onboarding/components/OnboardingShell";
+import { useBrainBuild } from "@/features/onboarding/hooks/useBrainBuild";
 import { useLearningProgress } from "@/features/onboarding/hooks/useLearningProgress";
 import { LEARNING_STEPS } from "@/features/onboarding/data/onboarding-fixtures";
 import dexterOnline from "@/assets/dexter_online.png";
-
-/** Small spinner for the in-progress checklist item (no inline SVG). */
-function Spinner() {
-  return (
-    <span
-      aria-hidden
-      className="block size-[18px] rounded-full border-2 border-white/30 border-t-white motion-safe:animate-spin"
-    />
-  );
-}
 
 /** Linger on the finished state before advancing to the "all set" screen. */
 const FINISH_HOLD_MS = 700;
@@ -26,13 +18,23 @@ export interface StepLearningProps {
 }
 
 /**
- * "Learning your world" step: the brain crawls sources over a full-bleed image
- * while a checklist completes in sequence on top of it, then advances to the
- * ready screen. Replaces the former cinematic build scene.
+ * "Building your brain" step: fires a real onboarding sweep (`POST /sweeps`) and
+ * polls it to completion via {@link useBrainBuild}, while the checklist animates
+ * over a full-bleed image. The final checklist item — and the auto-advance — are
+ * gated on the *real* sweep reaching a terminal state (or failing to start, e.g.
+ * no sources connected yet), not on a timer.
  */
 export function StepLearning({ onComplete }: StepLearningProps) {
   const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const { completed, done } = useLearningProgress(LEARNING_STEPS.length, reduced);
+  const { completed } = useLearningProgress(LEARNING_STEPS.length, reduced);
+  const { done: sweepDone, failed } = useBrainBuild();
+
+  // The build is over once the real sweep is terminal, or couldn't start at all.
+  const buildDone = sweepDone || failed;
+  const total = LEARNING_STEPS.length;
+  // Hold the last checklist item until the real sweep actually finishes.
+  const effectiveCompleted = buildDone ? total : Math.min(completed, total - 1);
+  const done = buildDone && effectiveCompleted >= total;
 
   useEffect(() => {
     if (!done) return;
@@ -64,16 +66,16 @@ export function StepLearning({ onComplete }: StepLearningProps) {
         <div className="absolute inset-x-0 bottom-0 p-7 md:p-14">
           <div className="max-w-[520px] motion-safe:animate-fade-up">
             <h1 className="text-[28px] font-bold tracking-tight text-white md:text-[36px]">
-              Learning your world
+              Building your brain
             </h1>
             <p className="mt-2.5 max-w-[440px] text-[15px] leading-[1.5] text-white/85 md:text-base">
-              Brainite is crawling your tools and connecting the dots.
+              Brainite is reading your connected tools and extracting decisions.
             </p>
 
             <div className="mt-6 flex flex-col gap-2">
               {LEARNING_STEPS.map((item, i) => {
-                const isDone = i < completed;
-                const isActive = i === completed && !done;
+                const isDone = i < effectiveCompleted;
+                const isActive = i === effectiveCompleted && !done;
                 return (
                   <div
                     key={item.t}
@@ -92,7 +94,7 @@ export function StepLearning({ onComplete }: StepLearningProps) {
                           className="text-green-300"
                         />
                       ) : isActive ? (
-                        <Spinner />
+                        <Spinner size={18} tone="light" />
                       ) : (
                         <span className="block size-[14px] rounded-full border-2 border-white/30" />
                       )}

@@ -33,6 +33,9 @@ import {
   HiArrowsRightLeft,
   HiMapPin,
   HiShare,
+  HiExclamationTriangle,
+  HiTrash,
+  HiArrowPath,
 } from "react-icons/hi2";
 import { FaBrain } from "react-icons/fa6";
 
@@ -76,6 +79,9 @@ const ICON_MAP = {
   diff: HiArrowsRightLeft,
   sidebar: HiBars3,
   brain: FaBrain,
+  warning: HiExclamationTriangle,
+  trash: HiTrash,
+  refresh: HiArrowPath,
 } satisfies Record<string, IconType>;
 
 export type AppIconName = keyof typeof ICON_MAP;

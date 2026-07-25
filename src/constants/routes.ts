@@ -1,12 +1,19 @@
 /** Centralized route paths. Keep these in sync with the router. */
 export const ROUTES = {
   auth: "/auth",
+  /** OAuth SSO redirect target — a single provider-less page (the BE registers
+   * exactly this as the redirect_uri). The provider is recalled from
+   * sessionStorage, not the URL. */
+  authCallback: "/auth/callback",
   onboarding: "/onboarding",
   dashboard: "/dashboard",
   chat: "/dashboard/chat",
   decisions: "/dashboard/decisions",
   reviews: "/dashboard/reviews",
   sources: "/dashboard/sources",
+  /** Where the backend redirects the browser after a source OAuth callback.
+   * Forwarded to `sources`, preserving `?connected=` / `?error=`. */
+  sourcesCallback: "/settings/sources",
   skills: "/dashboard/skills",
   settings: "/dashboard/settings",
 } as const;

@@ -1,3 +1,4 @@
+export { ActivityFeedDialog } from "./ActivityFeedDialog";
 export { CommandPalette, type CommandPaletteProps } from "./CommandPalette";
 export { DashboardSidebar } from "./DashboardSidebar";
 export { DashboardTopBar } from "./DashboardTopBar";

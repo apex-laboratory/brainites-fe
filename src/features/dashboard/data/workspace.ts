@@ -1,12 +1,10 @@
 import { BRAND } from "@/constants/brand";
 
-/** The signed-in user shown in the sidebar account row (prototype: Dana Reyes). */
-export const CURRENT_USER = {
-  name: "Dana Reyes",
-  title: "Head of CX · Admin",
-} as const;
-
-/** The active workspace shown in the sidebar switcher. */
+/**
+ * Fallback workspace chrome for the sidebar switcher. `name`/`url` come from the
+ * live session (see `WorkspaceSwitcher`); `plan` and `memberCount` stay static
+ * until a backend surfaces them.
+ */
 export const WORKSPACE = {
   name: BRAND.workspace,
   plan: "Pro workspace",

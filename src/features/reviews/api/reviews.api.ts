@@ -1,0 +1,86 @@
+import { api } from "@/lib/api";
+
+import {
+  BulkApproveResultSchema,
+  ResolveResultSchema,
+  ReviewListSchema,
+  ReviewSchema,
+  ReviewStatsSchema,
+  type BulkApproveResult,
+  type ResolveResult,
+  type ReviewOut,
+  type ReviewStats,
+} from "./reviews.schemas";
+
+export type ReviewListParams = {
+  status?: "pending" | "approved" | "rejected";
+  kind?: string;
+  limit?: number;
+};
+
+/**
+ * Body for `POST /reviews/{id}/write` — a reviewer-authored correction. The
+ * human writes the skill's base logic directly; it publishes at confidence 1.0.
+ * `exceptions`, when provided, replaces the skill's exceptions block.
+ */
+export type WriteReviewBody = {
+  baseLogic: string;
+  exceptions?: Record<string, unknown>[] | null;
+  comment?: string;
+};
+
+/**
+ * Body for `POST /reviews/{id}/resolve` — resolve a contradiction card. Adopt
+ * one side's proposed text (`source_a`/`source_b`) as the new base logic, or
+ * `write` the correct version (requires `correction`).
+ */
+export type ResolveContradictionBody = {
+  choice: "source_a" | "source_b" | "write";
+  correction?: WriteReviewBody | null;
+  comment?: string;
+};
+
+/**
+ * Reviews endpoint functions. Workspace scope comes from the JWT; every route
+ * requires an **admin** role (a viewer/editor gets 403).
+ */
+export const reviewsApi = {
+  list: (params?: ReviewListParams): Promise<ReviewOut[]> =>
+    api.get("/reviews", ReviewListSchema, { params }),
+
+  stats: (): Promise<ReviewStats> => api.get("/reviews/stats", ReviewStatsSchema),
+
+  get: (reviewId: string): Promise<ReviewOut> =>
+    api.get(`/reviews/${reviewId}`, ReviewSchema),
+
+  approve: (reviewId: string, comment?: string): Promise<ResolveResult> =>
+    api.post(`/reviews/${reviewId}/approve`, ResolveResultSchema, comment ? { comment } : undefined),
+
+  reject: (reviewId: string, comment?: string): Promise<ResolveResult> =>
+    api.post(`/reviews/${reviewId}/reject`, ResolveResultSchema, comment ? { comment } : undefined),
+
+  /** Approve many sweep-sourced reviews at once (1–200 ids). */
+  bulkApprove: (ids: string[], comment?: string): Promise<BulkApproveResult> =>
+    api.post("/reviews/bulk-approve", BulkApproveResultSchema, {
+      ids,
+      ...(comment ? { comment } : {}),
+    }),
+
+  /** Reviewer writes the correct skill logic directly (publishes at confidence 1.0). */
+  write: (reviewId: string, body: WriteReviewBody): Promise<ResolveResult> =>
+    api.post(`/reviews/${reviewId}/write`, ResolveResultSchema, body),
+
+  /** Resolve a contradiction: pick an authoritative source, or write the fix. */
+  resolve: (reviewId: string, body: ResolveContradictionBody): Promise<ResolveResult> =>
+    api.post(`/reviews/${reviewId}/resolve`, ResolveResultSchema, body),
+};
+
+/** Query keys for the reviews feature (workspace-keyed so a switch can't serve stale). */
+export const reviewKeys = {
+  all: (workspaceId: string) => ["reviews", workspaceId] as const,
+  list: (workspaceId: string, params?: ReviewListParams) =>
+    ["reviews", workspaceId, "list", params ?? {}] as const,
+  stats: (workspaceId: string) => ["reviews", workspaceId, "stats"] as const,
+  detail: (workspaceId: string, reviewId: string) =>
+    ["reviews", workspaceId, "detail", reviewId] as const,
+};

@@ -10,7 +10,7 @@ import {
 
 import { AppIcon } from "@/components/shared/AppIcon";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AGENT_GUIDES } from "@/features/onboarding/data/integration";
+import type { AgentGuide } from "@/features/onboarding/data/integration";
 import { CopyBlock } from "@/features/onboarding/components/CopyField";
 
 /** Brand mark + official brand color per agent guide. Resolved here so the
@@ -26,6 +26,8 @@ const GUIDE_ICONS: Record<string, { Icon: IconType; color: string }> = {
 };
 
 export interface AgentSetupProps {
+  /** Per-framework guides, pre-filled with the tenant's live endpoint + key. */
+  guides: AgentGuide[];
   /** Copies a value and shows a toast. Supplied by the parent step. */
   onCopy: (value: string, label?: string) => void;
 }
@@ -36,13 +38,13 @@ export interface AgentSetupProps {
  * pre-filled with the tenant's endpoint + key and a note on where the system
  * prompt goes.
  */
-export function AgentSetup({ onCopy }: AgentSetupProps) {
-  const [active, setActive] = useState(AGENT_GUIDES[0].id);
+export function AgentSetup({ guides, onCopy }: AgentSetupProps) {
+  const [active, setActive] = useState(guides[0]?.id ?? "");
 
   return (
     <Tabs value={active} onValueChange={setActive}>
       <TabsList className="h-auto flex-wrap justify-start">
-        {AGENT_GUIDES.map((guide) => {
+        {guides.map((guide) => {
           const brand = GUIDE_ICONS[guide.id];
           return (
             <TabsTrigger key={guide.id} value={guide.id} className="gap-1.5">
@@ -59,7 +61,7 @@ export function AgentSetup({ onCopy }: AgentSetupProps) {
         })}
       </TabsList>
 
-      {AGENT_GUIDES.map((guide) => (
+      {guides.map((guide) => (
         <TabsContent key={guide.id} value={guide.id} className="flex flex-col gap-3.5">
           <p className="text-[13.5px] leading-relaxed text-ink-3">{guide.blurb}</p>
 

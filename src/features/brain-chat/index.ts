@@ -5,15 +5,13 @@ export {
   BrainChatProvider,
   useBrainChatContext,
 } from "./context/BrainChatContext";
-export { answerFor, type BrainReply } from "./data/answer-for";
-export {
-  BRAIN_ANSWERS,
-  DEFAULT_ANSWER,
-  CHAT_SUGGESTIONS,
-} from "./data/brain-answers";
+export { brainApi, brainKeys } from "./api";
 export type {
-  BrainAnswer,
-  AnswerSource,
-  ChatRole,
-  ChatMessage as ChatMessageData,
-} from "./types";
+  BrainProvenance,
+  BrainQueryResponse,
+  BrainStatus,
+  SourceCitation,
+  Trust,
+} from "./api";
+export { CHAT_SUGGESTIONS } from "./data/brain-answers";
+export type { AnswerSource, ChatRole, ChatMessage as ChatMessageData } from "./types";

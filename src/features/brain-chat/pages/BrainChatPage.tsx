@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { AppIcon, StatusIndicator } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { BRAND } from "@/constants/brand";
 import { SOURCE_ORDER } from "@/constants/sources";
 
 import { ChatMessage } from "../components/ChatMessage";
@@ -36,8 +35,16 @@ function TypingIndicator() {
  * `BrainChatContext`, so history survives navigating away and back.
  */
 export function BrainChatPage() {
-  const { messages, typing, send, suggestions, showSuggestions } =
-    useBrainChatContext();
+  const {
+    messages,
+    typing,
+    send,
+    suggestions,
+    workspaceName,
+    showSuggestions,
+    ready,
+    notReadyReason,
+  } = useBrainChatContext();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +70,7 @@ export function BrainChatPage() {
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-bold tracking-[-0.01em] text-ink">
-            {BRAND.workspace} brain
+            {workspaceName} brain
           </div>
           <StatusIndicator
             tone="live"
@@ -119,8 +126,13 @@ export function BrainChatPage() {
                   submit();
                 }
               }}
-              placeholder={`Ask ${BRAND.workspace}'s brain anything…`}
+              placeholder={
+                ready
+                  ? `Ask ${workspaceName}'s brain anything…`
+                  : "The brain isn't ready yet"
+              }
               aria-label="Ask the brain"
+              disabled={!ready}
               rows={1}
               className="max-h-40 min-h-[44px] flex-1 resize-none border-0 bg-transparent px-2 py-2.5 text-[15px] shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
@@ -128,7 +140,7 @@ export function BrainChatPage() {
               type="button"
               size="icon"
               onClick={() => submit()}
-              disabled={typing || !draft.trim()}
+              disabled={typing || !draft.trim() || !ready}
               aria-label="Send"
               className="size-[38px] shrink-0"
             >
@@ -136,8 +148,12 @@ export function BrainChatPage() {
             </Button>
           </div>
           <p className="mt-2 px-1 text-center text-[11.5px] text-ink-4">
-            Answers are backed by your connected sources. Press Enter to send,
-            Shift + Enter for a new line.
+            {notReadyReason ?? (
+              <>
+                Answers are backed by your connected sources. Press Enter to send,
+                Shift + Enter for a new line.
+              </>
+            )}
           </p>
         </div>
       </div>

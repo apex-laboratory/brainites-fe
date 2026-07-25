@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 
 import {
   AppIcon,
@@ -8,92 +7,109 @@ import {
   SectionLabel,
   Sparkline,
   SourceTile,
-  StatusIndicator,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 
-import type { SourceHealthEntry } from "../hooks/useSourceHealth";
+import type { SourceEntry } from "../hooks/useSources";
+import { ManageSourceDialog } from "./ManageSourceDialog";
+import { SourceStatusLine } from "./SourceStatus";
 
 export interface SourceCardProps {
-  entry: SourceHealthEntry;
+  entry: SourceEntry;
 }
 
-/** A single connected-source card (prototype `SourceCard`). */
+/**
+ * A single connected-source card.
+ *
+ * `GET /sources` returns only identity, status, and health today — the richer
+ * counts (`extractedLabel`, `activeChannelCount`, `pendingItems`, `ingest7d`)
+ * ship on the dashboard `overview` payload. Each block below renders only when
+ * its field is present, so the card is honest now and fills out on its own once
+ * the backend widens the payload.
+ */
 export function SourceCard({ entry }: SourceCardProps) {
-  const { meta, health } = entry;
+  const { source, meta } = entry;
   const navigate = useNavigate();
 
+  const stats = [
+    source.extractedLabel && { label: "Knowledge", value: source.extractedLabel },
+    source.activeChannelCount != null && {
+      label: "Channels",
+      value: `${source.activeChannelCount} active`,
+    },
+  ].filter((stat): stat is { label: string; value: string } => Boolean(stat));
+
   return (
-    <Card className="p-[22px]">
+    <Card className="flex flex-col p-[22px]">
       <div className="flex items-center gap-3">
-        <SourceTile id={meta.id} size={46} iconSize={26} />
+        <SourceTile id={source.provider} size={46} iconSize={26} />
         <div className="min-w-0">
           <div className="text-[17px] font-bold tracking-[-0.01em] text-ink">
             {meta.name}
           </div>
-          <div className="mt-0.5 flex items-center gap-1.5 whitespace-nowrap">
-            <StatusIndicator tone="green" pulse />
-            <span className="text-[12.5px] font-semibold text-green">
-              Connected
-            </span>
-            <span className="text-[12.5px] text-ink-4">· synced {health.sync}</span>
-          </div>
+          <SourceStatusLine source={source} className="mt-0.5" />
         </div>
-        {health.pending > 0 && (
+        {source.pendingItems != null && source.pendingItems > 0 && (
           <Badge variant="amber" className="ml-auto shrink-0">
-            {health.pending} pending
+            {source.pendingItems} pending
           </Badge>
         )}
       </div>
 
-      <div className="mt-[18px] grid grid-cols-2 gap-3">
-        <MiniStat label="Knowledge" value={health.extracted} />
-        <MiniStat label="Channels" value={`${health.channels} active`} />
-      </div>
+      {source.name !== meta.name && (
+        <div className="mt-2.5 truncate text-[12.5px] text-ink-3">{source.name}</div>
+      )}
 
-      <div className="mt-4 flex items-end gap-3.5">
-        <div className="flex-1">
-          <div className="mb-1.5 flex justify-between">
-            <SectionLabel className="pb-0 text-[9.5px]">Health</SectionLabel>
-            <span className="tnum text-[11px] text-ink-3">{health.health}%</span>
-          </div>
-          <Meter value={health.health} tone="green" />
+      {stats.length > 0 && (
+        <div className="mt-[18px] grid grid-cols-2 gap-3">
+          {stats.map((stat) => (
+            <MiniStat key={stat.label} label={stat.label} value={stat.value} />
+          ))}
         </div>
-        <div className="shrink-0">
-          <SectionLabel className="pb-0 text-right text-[9.5px]">
-            7d ingest
-          </SectionLabel>
-          <Sparkline
-            data={health.spark}
-            width={72}
-            height={22}
-            color="var(--green)"
-            className="mt-1"
-          />
-        </div>
-      </div>
+      )}
 
-      <div className="mt-[18px] flex gap-2.5">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1"
-          onClick={() =>
-            toast.info(`${meta.name} settings`, {
-              description: `Scope, channels and sync for ${meta.name}.`,
-            })
+      {(source.health != null || source.ingest7d) && (
+        <div className="mt-4 flex items-end gap-3.5">
+          {source.health != null && (
+            <div className="flex-1">
+              <div className="mb-1.5 flex justify-between">
+                <SectionLabel className="pb-0 text-[9.5px]">Health</SectionLabel>
+                <span className="tnum text-[11px] text-ink-3">{source.health}%</span>
+              </div>
+              <Meter value={source.health} tone="green" />
+            </div>
+          )}
+          {source.ingest7d && (
+            <div className="shrink-0">
+              <SectionLabel className="pb-0 text-right text-[9.5px]">
+                7d ingest
+              </SectionLabel>
+              <Sparkline
+                data={source.ingest7d}
+                width={72}
+                height={22}
+                color="var(--green)"
+                className="mt-1"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-auto flex gap-2.5 pt-[18px]">
+        <ManageSourceDialog
+          source={source}
+          meta={meta}
+          trigger={
+            <Button variant="outline" size="sm" className="flex-1">
+              Manage
+            </Button>
           }
-        >
-          Manage
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => navigate(ROUTES.decisions)}
-        >
+        />
+        <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.decisions)}>
           View knowledge
           <AppIcon name="arrow" size={14} />
         </Button>

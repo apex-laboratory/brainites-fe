@@ -1,35 +1,62 @@
-import { toast } from "sonner";
-
-import { AppIcon, SectionLabel } from "@/components/shared";
+import { AppIcon, ErrorState, SectionLabel, Skeleton } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { BRAND } from "@/constants/brand";
-import { WORKSPACE } from "@/features/dashboard/data/workspace";
+import { useCopyToClipboard } from "@/hooks";
 
+import { useSettings } from "../hooks";
 import { SetRow } from "./SetRow";
 
 /** Settings → General tab: workspace details + brain endpoint. */
 export function SettingsGeneral() {
-  const copyEndpoint = async () => {
-    try {
-      await navigator.clipboard.writeText(BRAND.brainEndpoint);
-      toast.success("Endpoint copied to clipboard");
-    } catch {
-      toast.error("Couldn't copy the endpoint");
-    }
-  };
+  const { settings, isPending, isError, error, refetch, update } = useSettings();
+  const { copy } = useCopyToClipboard();
+
+  if (isPending) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-36 rounded-2xl" />
+      </div>
+    );
+  }
+
+  if (isError || !settings) {
+    return (
+      <ErrorState
+        error={error}
+        onRetry={() => refetch()}
+        title="Couldn't load workspace settings"
+      />
+    );
+  }
+
+  const { workspace, brainEndpoint } = settings;
 
   return (
     <div className="flex flex-col gap-4">
       <Card className="p-6">
         <SectionLabel className="mb-4 pb-0">Workspace</SectionLabel>
         <div className="flex flex-col">
-          <SetRow label="Workspace name" value={WORKSPACE.name} />
-          <SetRow label="Workspace URL" value={WORKSPACE.url} mono />
+          <SetRow
+            label="Workspace name"
+            value={workspace.name}
+            onSave={async (name) => {
+              await update.mutateAsync({ name });
+            }}
+          />
+          <SetRow
+            label="Domain"
+            value={workspace.domain ?? ""}
+            mono
+            onSave={async (domain) => {
+              await update.mutateAsync({ domain });
+            }}
+          />
           <SetRow
             label="Plan"
-            value={`Pro · ${WORKSPACE.memberCount} seats`}
+            value={`${workspace.plan} · ${workspace.seatLimit} seats`}
+            editable={false}
           />
         </div>
       </Card>
@@ -44,11 +71,13 @@ export function SettingsGeneral() {
         </p>
         <div className="flex items-center gap-2.5 rounded-[11px] bg-solid px-4 py-3">
           <span className="tnum min-w-0 flex-1 truncate font-mono text-[13px] text-solid-ink">
-            {BRAND.brainEndpoint}
+            {brainEndpoint}
           </span>
           <Button
             size="sm"
-            onClick={copyEndpoint}
+            onClick={() =>
+              settings && copy(settings.brainEndpoint, "Endpoint copied to clipboard")
+            }
             className="h-[30px] bg-white/10 text-solid-ink shadow-none hover:bg-white/20"
           >
             <AppIcon name="link" size={13} />
