@@ -3,75 +3,12 @@ import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import { useDebounce } from "@/hooks/useDebounce";
-import { SOURCES } from "@/constants/sources";
-import type { SourceId } from "@/types/common";
-import { formatCompact } from "@/utils/format";
-import { formatRelativeTime } from "@/utils/date";
 
-import {
-  skillKeys,
-  skillsApi,
-  type SkillListItem,
-  type SkillSearchResult,
-} from "../api";
-import type { Skill, SkillStatus } from "../types";
+import { skillKeys, skillsApi } from "../api";
+import { mapListItem, mapSearchHit } from "../mappers";
+import type { Skill } from "../types";
 
 const BROWSE_PAGE_SIZE = 50;
-
-/** Keep only the providers we know how to render, in the given order. */
-function asSources(providers: (string | null | undefined)[]): SourceId[] {
-  const seen = new Set<SourceId>();
-  for (const p of providers) {
-    if (p && p in SOURCES) seen.add(p as SourceId);
-  }
-  return [...seen];
-}
-
-/** A published skill is `active`/`stable`; anything else falls back to `stable`. */
-function asStatus(status: string | null | undefined): SkillStatus {
-  return status === "active" || status === "draft" || status === "review"
-    ? status
-    : "stable";
-}
-
-/**
- * Turn backend usage metrics into the table's display fields. A skill with no
- * recorded interactions (empty series) carries no metrics, so the table renders
- * the placeholder (or, for a search hit, the `% match`) instead.
- */
-function mapMetrics(calls30d: number, callSeries: number[], updatedAt?: string | null) {
-  const hasUsage = callSeries.some((n) => n > 0);
-  return {
-    calls: hasUsage ? formatCompact(calls30d) : undefined,
-    spark: hasUsage ? callSeries : undefined,
-    updated: formatRelativeTime(updatedAt) ?? undefined,
-  };
-}
-
-/** Map a browse-list row onto the table's view model. */
-function mapListItem(r: SkillListItem): Skill {
-  return {
-    id: r.id,
-    name: r.name,
-    v: r.version,
-    src: asSources(r.sourceProviders),
-    status: asStatus(r.status),
-    ...mapMetrics(r.calls30d, r.callSeries, r.updatedAt),
-  };
-}
-
-/** Map a search hit onto the table's view model (adds `similarity`). */
-function mapSearchHit(r: SkillSearchResult): Skill {
-  return {
-    id: r.id,
-    name: r.name,
-    v: r.version,
-    src: asSources([r.sourceAuthority]),
-    status: asStatus(r.status),
-    similarity: r.similarity,
-    ...mapMetrics(r.calls30d, r.callSeries, r.updatedAt),
-  };
-}
 
 /**
  * Owns the skills registry. With no query it browses `/skills` (paginated,

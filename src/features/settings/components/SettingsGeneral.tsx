@@ -1,9 +1,8 @@
-import { toast } from "sonner";
-
 import { AppIcon, ErrorState, SectionLabel, Skeleton } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useCopyToClipboard } from "@/hooks";
 
 import { useSettings } from "../hooks";
 import { SetRow } from "./SetRow";
@@ -11,16 +10,7 @@ import { SetRow } from "./SetRow";
 /** Settings → General tab: workspace details + brain endpoint. */
 export function SettingsGeneral() {
   const { settings, isPending, isError, error, refetch, update } = useSettings();
-
-  const copyEndpoint = async () => {
-    if (!settings) return;
-    try {
-      await navigator.clipboard.writeText(settings.brainEndpoint);
-      toast.success("Endpoint copied to clipboard");
-    } catch {
-      toast.error("Couldn't copy the endpoint");
-    }
-  };
+  const { copy } = useCopyToClipboard();
 
   if (isPending) {
     return (
@@ -85,7 +75,9 @@ export function SettingsGeneral() {
           </span>
           <Button
             size="sm"
-            onClick={copyEndpoint}
+            onClick={() =>
+              settings && copy(settings.brainEndpoint, "Endpoint copied to clipboard")
+            }
             className="h-[30px] bg-white/10 text-solid-ink shadow-none hover:bg-white/20"
           >
             <AppIcon name="link" size={13} />

@@ -47,13 +47,7 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
   return (
     <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-14 pt-7 md:px-8">
       <div className="flex items-center gap-2.5">
-        {decision.src ? (
-          <SourceTile id={decision.src} size={40} iconSize={22} />
-        ) : (
-          <span className="grid size-10 shrink-0 place-items-center rounded-[9px] bg-cream text-ink-3">
-            <AppIcon name="sparkles" size={22} />
-          </span>
-        )}
+        <SourceTile id={decision.src} size={40} iconSize={22} />
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <SectionLabel className="pb-0">{decision.cat}</SectionLabel>

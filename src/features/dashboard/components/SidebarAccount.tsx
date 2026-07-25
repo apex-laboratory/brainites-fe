@@ -2,20 +2,14 @@ import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
 import { AppIcon, NiceAvatar } from "@/components/shared";
-import type { AuthRole } from "@/features/auth/api";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ROUTES } from "@/constants/routes";
+import { ROLE_LABEL } from "@/features/settings";
 import { cn } from "@/utils/cn";
-
-const ROLE_LABEL: Record<AuthRole, string> = {
-  viewer: "Viewer",
-  editor: "Editor",
-  admin: "Admin",
-};
 
 export interface SidebarAccountProps {
   collapsed: boolean;

@@ -1,8 +1,7 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { queryClient } from "@/lib/api";
 
 import { ROLE_LABEL, settingsApi, settingsKeys, type InviteInput } from "../api";
 
@@ -13,6 +12,7 @@ import { ROLE_LABEL, settingsApi, settingsKeys, type InviteInput } from "../api"
  */
 export function useMembers() {
   const workspaceId = useWorkspaceId();
+  const queryClient = useQueryClient();
 
   const query = useQuery({
     queryKey: settingsKeys.members(workspaceId),

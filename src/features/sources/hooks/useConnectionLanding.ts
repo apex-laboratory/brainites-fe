@@ -1,19 +1,30 @@
 import { useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
+import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import { SOURCES } from "@/constants/sources";
 import type { SourceId } from "@/types/common";
+
+import { sourceKeys } from "../api";
 
 /**
  * Handles the return leg of a source OAuth flow.
  *
  * The provider redirects to the backend's callback, which finishes the token
  * exchange server-side and bounces the browser back with `?connected={provider}`
- * (or `?error=…` if consent was declined). We acknowledge the outcome, refetch
- * the now-stale source list, and strip the param so a reload doesn't re-toast.
+ * (or `?error=…` if consent was declined). We acknowledge the outcome, mark the
+ * now-stale source queries for refetch, and strip the param so a reload doesn't
+ * re-toast.
+ *
+ * Invalidation lives here rather than in a caller-supplied callback: the cache
+ * key belongs to this feature, so any surface that handles the connect-return
+ * (Sources, onboarding's connect step) gets it without knowing what went stale.
  */
-export function useConnectionLanding(refetch: () => void) {
+export function useConnectionLanding() {
+  const workspaceId = useWorkspaceId();
+  const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const handled = useRef(false); // StrictMode double-invoke guard
 
@@ -35,7 +46,7 @@ export function useConnectionLanding(refetch: () => void) {
       toast.success(`${name} connected`, {
         description: "We'll let you know once the first sync completes.",
       });
-      refetch();
+      void queryClient.invalidateQueries({ queryKey: sourceKeys.all(workspaceId) });
     }
 
     setParams(
@@ -46,5 +57,5 @@ export function useConnectionLanding(refetch: () => void) {
       },
       { replace: true },
     );
-  }, [connected, error, refetch, setParams]);
+  }, [connected, error, queryClient, setParams, workspaceId]);
 }

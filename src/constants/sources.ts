@@ -1,4 +1,5 @@
 import type { SourceId } from "@/types/common";
+import { compactMap } from "@/utils/array";
 
 export type SourceMeta = {
   id: SourceId;
@@ -21,6 +22,20 @@ export const SOURCES: Record<SourceId, SourceMeta> = {
   google_drive: { id: "google_drive", name: "Google Drive", color: "#1FA463", tag: "Docs, sheets & slides" },
   gmail: { id: "gmail", name: "Gmail", color: "#EA4335", tag: "Threads & commitments" },
 };
+
+/** Narrow a raw backend provider string to a known `SourceId`, or `null` if it
+ * isn't one we render. Keeps `SOURCES[id]` lookups from ever indexing undefined.
+ * The single home for this guard — hooks and mappers import it rather than
+ * re-declaring it. */
+export function asSourceId(provider: string | null | undefined): SourceId | null {
+  return provider && provider in SOURCES ? (provider as SourceId) : null;
+}
+
+/** List form of {@link asSourceId}: narrow a provider array, dropping unknowns
+ * and de-duplicating (so a source lineage never shows the same icon twice). */
+export function asSourceIds(providers: readonly (string | null | undefined)[]): SourceId[] {
+  return [...new Set(compactMap(providers, asSourceId))];
+}
 
 export const SOURCE_ORDER: SourceId[] = [
   "slack",

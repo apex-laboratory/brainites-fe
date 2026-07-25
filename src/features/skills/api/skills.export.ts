@@ -1,39 +1,23 @@
 /**
- * `GET /skills/export` (admin-only) returns a raw `application/zip` bundle, not
- * the `{ data, meta }` JSON envelope — so it can't go through the typed `api`
- * client. This is the one skills call that touches a raw `Response`: it fetches
- * the blob with the same `Authorization` header and single 401→refresh→retry
- * behaviour, and reads the download filename off `Content-Disposition`.
+ * `GET /skills/export` (admin-only) returns a raw `application/zip` bundle
+ * rather than the `{ data, meta }` JSON envelope, so it goes through the
+ * client's blob path instead of the typed one. Auth, timeout, the single
+ * 401→refresh→retry and `ApiError` normalization are all the client's — the
+ * only thing this module owns is the export's longer timeout and its filename
+ * fallback.
  */
 
-import { API_BASE_URL } from "@/lib/api/config";
-import { ApiError, getAccessToken, refreshTokens } from "@/lib/api";
+import { api } from "@/lib/api";
 
 /** Fallback filename matching the backend's `Content-Disposition`. */
 const DEFAULT_EXPORT_FILENAME = "company-brain-skills.zip";
 
-export interface SkillsExport {
-  blob: Blob;
-  filename: string;
-}
-
-function filenameFromDisposition(header: string | null): string {
-  if (!header) return DEFAULT_EXPORT_FILENAME;
-  const match = /filename="?([^"]+)"?/.exec(header);
-  return match?.[1] ?? DEFAULT_EXPORT_FILENAME;
-}
-
 /** Export can be large; allow longer than the default 15s request timeout. */
 const EXPORT_TIMEOUT_MS = 60_000;
 
-async function fetchExport(): Promise<Response> {
-  const token = getAccessToken();
-  return fetch(`${API_BASE_URL}/skills/export`, {
-    method: "GET",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    credentials: "include",
-    signal: AbortSignal.timeout(EXPORT_TIMEOUT_MS),
-  });
+export interface SkillsExport {
+  blob: Blob;
+  filename: string;
 }
 
 /**
@@ -42,30 +26,8 @@ async function fetchExport(): Promise<Response> {
  * non-admin receives 403 → `ApiError("forbidden")`.
  */
 export async function exportSkills(): Promise<SkillsExport> {
-  let res: Response;
-  try {
-    res = await fetchExport();
-    if (res.status === 401) {
-      await refreshTokens(); // single-flight; throws + signals on failure
-      res = await fetchExport();
-    }
-  } catch (err) {
-    if (err instanceof ApiError) throw err;
-    throw new ApiError("network_error", "Could not reach the server", null);
-  }
-
-  if (!res.ok) {
-    throw new ApiError(
-      ApiError.codeForStatus(res.status),
-      res.statusText || "Export failed",
-      res.status,
-      undefined,
-      res.headers.get("x-request-id") ?? undefined,
-    );
-  }
-
-  return {
-    blob: await res.blob(),
-    filename: filenameFromDisposition(res.headers.get("content-disposition")),
-  };
+  const { blob, filename } = await api.blob("/skills/export", {
+    timeoutMs: EXPORT_TIMEOUT_MS,
+  });
+  return { blob, filename: filename ?? DEFAULT_EXPORT_FILENAME };
 }

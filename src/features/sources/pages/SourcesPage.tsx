@@ -1,5 +1,3 @@
-import { useCallback } from "react";
-
 import {
   AppIcon,
   EmptyState,
@@ -20,10 +18,7 @@ import { useSources } from "../hooks/useSources";
 export function SourcesPage() {
   const { sources, stats, healthyCount, isPending, isError, error, refetch } = useSources();
 
-  // `refetch` is referentially stable across renders, but wrap it so the landing
-  // effect never re-runs on an unrelated identity change.
-  const refetchSources = useCallback(() => void refetch(), [refetch]);
-  useConnectionLanding(refetchSources);
+  useConnectionLanding();
 
   const addSource = (
     <AddSourceDialog
@@ -58,7 +53,7 @@ export function SourcesPage() {
         ) : isError ? (
           <ErrorState
             error={error}
-            onRetry={refetchSources}
+            onRetry={() => void refetch()}
             title="Couldn't load your sources"
           />
         ) : sources.length === 0 ? (

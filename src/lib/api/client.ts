@@ -35,6 +35,8 @@ export interface ApiInit {
   skipAuth?: boolean;
   /** Internal: prevents infinite refresh→retry recursion. */
   skipAuthRetry?: boolean;
+  /** Per-request timeout override; defaults to `REQUEST_TIMEOUT_MS`. */
+  timeoutMs?: number;
   signal?: AbortSignal;
 }
 
@@ -73,7 +75,7 @@ async function doFetch(path: string, init: ApiInit): Promise<Response> {
   }
 
   // Compose the caller's abort signal with a timeout signal.
-  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const timeout = AbortSignal.timeout(init.timeoutMs ?? REQUEST_TIMEOUT_MS);
   const signal = init.signal
     ? anySignal([init.signal, timeout])
     : timeout;
@@ -176,6 +178,31 @@ function normalizeFastApiDetails(details: unknown[]): ApiErrorDetail[] | undefin
 }
 
 /**
+ * Fetch, transparently refresh-and-retry once on a 401, and throw a typed
+ * `ApiError` for any non-2xx. Everything response-shaped — the JSON envelope
+ * path and the blob path — is built on top of this.
+ */
+async function fetchOk(path: string, init: ApiInit): Promise<Response> {
+  const res = await doFetch(path, init);
+
+  // Transparent single refresh + retry on an expired access token.
+  if (res.status === 401 && !init.skipAuth && !init.skipAuthRetry) {
+    await refreshTokens(); // single-flight; throws + signals on failure
+    return fetchOk(path, { ...init, skipAuthRetry: true });
+  }
+
+  if (!res.ok) throw await toApiError(res);
+  return res;
+}
+
+/** Read the download filename off `Content-Disposition`, if the server sent one. */
+function filenameFromDisposition(header: string | null): string | null {
+  if (!header) return null;
+  const match = /filename="?([^"]+)"?/.exec(header);
+  return match?.[1] ?? null;
+}
+
+/**
  * The core request: fetch, refresh-on-401, unwrap the envelope, and validate
  * `data` against `schema`. Returns the validated payload **and** the raw
  * envelope `meta`, so callers that need pagination can read it. `schema` should
@@ -186,15 +213,7 @@ async function request<T>(
   schema: ResponseSchema<T>,
   init: ApiInit,
 ): Promise<{ data: T; meta: SuccessEnvelope<unknown>["meta"] }> {
-  const res = await doFetch(path, init);
-
-  // Transparent single refresh + retry on an expired access token.
-  if (res.status === 401 && !init.skipAuth && !init.skipAuthRetry) {
-    await refreshTokens(); // single-flight; throws + signals on failure
-    return request(path, schema, { ...init, skipAuthRetry: true });
-  }
-
-  if (!res.ok) throw await toApiError(res);
+  const res = await fetchOk(path, init);
 
   if (res.status === 204) return { data: schema.parse(undefined), meta: undefined };
 
@@ -272,6 +291,30 @@ api.patch = <T>(path: string, schema: ResponseSchema<T>, body?: unknown, init?: 
 
 api.delete = <T>(path: string, schema: ResponseSchema<T>, init?: Omit<ApiInit, "method" | "body">) =>
   api(path, schema, { ...init, method: "DELETE" });
+
+/** A downloaded file: the bytes plus the server-supplied name, if any. */
+export interface BlobResponse {
+  blob: Blob;
+  /** From `Content-Disposition`; `null` when the server didn't name the file. */
+  filename: string | null;
+}
+
+/**
+ * GET a non-JSON response (a zip export, a CSV, an avatar) through the same
+ * auth header, timeout, 401→refresh→retry and `ApiError` normalization as every
+ * other call. The `{ data, meta }` envelope and zod validation simply don't
+ * apply here — the body comes back as a `Blob`.
+ */
+api.blob = async (
+  path: string,
+  init: Omit<ApiInit, "method" | "body"> = {},
+): Promise<BlobResponse> => {
+  const res = await fetchOk(path, { ...init, method: "GET" });
+  return {
+    blob: await res.blob(),
+    filename: filenameFromDisposition(res.headers.get("content-disposition")),
+  };
+};
 
 /** Combine multiple AbortSignals into one that aborts when any input does. */
 function anySignal(signals: AbortSignal[]): AbortSignal {

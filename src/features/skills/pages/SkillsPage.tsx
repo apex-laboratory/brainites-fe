@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import {
   AppIcon,
   ErrorState,
@@ -11,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { formatCompact } from "@/utils/format";
 
 import { NewSkillDialog } from "../components/NewSkillDialog";
+import { SkillDetailDialog } from "../components/SkillDetailDialog";
 import { SkillsTable } from "../components/SkillsTable";
 import { useExportSkills } from "../hooks/useExportSkills";
 import { useSkillsSearch } from "../hooks/useSkillsSearch";
@@ -36,6 +39,12 @@ export function SkillsPage() {
   } = useSkillsSearch();
   const { exportBundle, isExporting } = useExportSkills();
   const statsQuery = useSkillsStats();
+
+  // The row's name is kept alongside the id so the dialog can title itself
+  // before the detail fetch resolves.
+  const [inspecting, setInspecting] = useState<{ id: string; name: string } | null>(
+    null,
+  );
 
   const stats: Stat[] = statsQuery.data
     ? [
@@ -103,6 +112,7 @@ export function SkillsPage() {
           <>
             <SkillsTable
               skills={skills}
+              onInspect={(id, name) => setInspecting({ id, name })}
               emptyLabel={
                 hasQuery
                   ? "No skills match your search."
@@ -124,6 +134,12 @@ export function SkillsPage() {
           </>
         )}
       </div>
+
+      <SkillDetailDialog
+        skillId={inspecting?.id ?? null}
+        skillName={inspecting?.name}
+        onClose={() => setInspecting(null)}
+      />
     </div>
   );
 }

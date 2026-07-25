@@ -1,18 +1,14 @@
-import type { ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
+import { Spinner } from "@/components/shared";
 import { ROUTES } from "@/constants/routes";
 
 /** Full-screen gate shown while the session is being rehydrated on load. */
 function SessionLoading() {
   return (
-    <div
-      className="grid min-h-full w-full place-items-center bg-ivory"
-      role="status"
-      aria-label="Loading"
-    >
-      <div className="size-6 animate-spin rounded-full border-2 border-line border-t-brand-ink" />
+    <div className="grid min-h-full w-full place-items-center bg-ivory">
+      <Spinner label="Loading" />
     </div>
   );
 }
@@ -23,7 +19,7 @@ function SessionLoading() {
  * resolved, an unauthenticated user is bounced to `/auth` (remembering where
  * they were headed).
  */
-export function RequireAuth({ children }: { children?: ReactNode }) {
+export function RequireAuth() {
   const { status } = useAuth();
   const location = useLocation();
 
@@ -31,27 +27,27 @@ export function RequireAuth({ children }: { children?: ReactNode }) {
   if (status === "unauthenticated") {
     return <Navigate to={ROUTES.auth} replace state={{ from: location }} />;
   }
-  return children ? <>{children}</> : <Outlet />;
+  return <Outlet />;
 }
 
 /**
  * Dashboard-only gate: an authenticated user without a workspace still needs to
  * finish onboarding, so send them there rather than into an empty dashboard.
  */
-export function RequireWorkspace({ children }: { children?: ReactNode }) {
+export function RequireWorkspace() {
   const { status, workspaceId } = useAuth();
 
   if (status === "loading") return <SessionLoading />;
   if (status === "unauthenticated") return <Navigate to={ROUTES.auth} replace />;
   if (!workspaceId) return <Navigate to={ROUTES.onboarding} replace />;
-  return children ? <>{children}</> : <Outlet />;
+  return <Outlet />;
 }
 
 /**
  * Guard for the auth screen itself: an already-authenticated visitor is sent to
  * their natural home (dashboard if they have a workspace, else onboarding).
  */
-export function RequireGuest({ children }: { children?: ReactNode }) {
+export function RequireGuest() {
   const { status, workspaceId } = useAuth();
 
   if (status === "loading") return <SessionLoading />;
@@ -63,5 +59,5 @@ export function RequireGuest({ children }: { children?: ReactNode }) {
       />
     );
   }
-  return children ? <>{children}</> : <Outlet />;
+  return <Outlet />;
 }

@@ -3,9 +3,8 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { useAuth, useWorkspaceId } from "@/app/providers/AuthProvider";
 import { BRAND } from "@/constants/brand";
-import { SOURCES } from "@/constants/sources";
+import { asSourceId } from "@/constants/sources";
 import { isApiError } from "@/lib/api";
-import type { SourceId } from "@/types/common";
 
 import { brainApi, brainKeys, type BrainQueryResponse, type SourceCitation } from "../api";
 import { CHAT_SUGGESTIONS } from "../data/brain-answers";
@@ -19,11 +18,6 @@ function greeting(firstName: string, workspaceName: string): ChatMessage {
     sources: [],
     conf: null,
   };
-}
-
-/** Narrow a backend provider id to one the UI has an icon for. */
-function asSourceId(provider: string | null | undefined): SourceId | null {
-  return provider && provider in SOURCES ? (provider as SourceId) : null;
 }
 
 function mapCitation(c: SourceCitation): AnswerSource {
@@ -55,6 +49,8 @@ export type BrainChatState = {
   /** Send a question to the brain (no-op while a reply is in flight or unready). */
   send: (text: string) => void;
   suggestions: string[];
+  /** Live workspace name (falls back to the brand default pre-session). */
+  workspaceName: string;
   /** True while the conversation is just the opening greeting. */
   showSuggestions: boolean;
   /** False when the backend says the brain can't answer yet. */
@@ -119,6 +115,8 @@ export function useBrainChat(): BrainChatState {
         },
       ]);
     },
+    // The failure is already rendered as a bubble in the transcript.
+    meta: { errorToast: false },
   });
 
   const typing = ask.isPending;
@@ -132,14 +130,19 @@ export function useBrainChat(): BrainChatState {
         "The brain isn't ready to answer yet.")
       : null;
 
+  // `ask` is a fresh object every render; `ask.mutate` is stable. Depending on
+  // the former made `send` — and every consumer memo downstream of it — churn on
+  // every render.
+  const { mutate: askBrain } = ask;
+
   const send = useCallback(
     (text: string) => {
       const question = text.trim();
       if (!question || typing || !ready) return;
       setMessages((current) => [...current, { role: "you", text: question }]);
-      ask.mutate(question);
+      askBrain(question);
     },
-    [ask, typing, ready],
+    [askBrain, typing, ready],
   );
 
   return {
@@ -147,6 +150,7 @@ export function useBrainChat(): BrainChatState {
     typing,
     send,
     suggestions: CHAT_SUGGESTIONS,
+    workspaceName,
     showSuggestions: messages.length === 1 && !typing,
     ready,
     notReadyReason,

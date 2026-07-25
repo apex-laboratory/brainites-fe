@@ -24,7 +24,12 @@ export const SyncStateSchema = z.object({
   lastSyncedAt: IsoDateTimeSchema.nullable(),
 });
 
-export const WorkspaceSummarySchema = z.object({
+/**
+ * The workspace block of the overview payload. Deliberately not the auth
+ * feature's `WorkspaceSummarySchema` — that one carries `id` and an optional
+ * `plan`; this wire shape has a required `plan` and no `id` at all.
+ */
+export const OverviewWorkspaceSchema = z.object({
   name: z.string(),
   slug: z.string(),
   plan: z.string(),
@@ -81,7 +86,7 @@ export const ActivityEventSchema = z.object({
 export type ActivityEvent = z.infer<typeof ActivityEventSchema>;
 
 export const OverviewSchema = z.object({
-  workspace: WorkspaceSummarySchema,
+  workspace: OverviewWorkspaceSchema,
   greetingName: z.string(),
   sync: SyncStateSchema,
   kpis: z.array(KpiSchema),

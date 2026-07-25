@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { AppIcon, StatusIndicator } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { BRAND } from "@/constants/brand";
 import { SOURCE_ORDER } from "@/constants/sources";
 
 import { ChatMessage } from "../components/ChatMessage";
@@ -36,8 +35,16 @@ function TypingIndicator() {
  * `BrainChatContext`, so history survives navigating away and back.
  */
 export function BrainChatPage() {
-  const { messages, typing, send, suggestions, showSuggestions, ready, notReadyReason } =
-    useBrainChatContext();
+  const {
+    messages,
+    typing,
+    send,
+    suggestions,
+    workspaceName,
+    showSuggestions,
+    ready,
+    notReadyReason,
+  } = useBrainChatContext();
   const [draft, setDraft] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -63,7 +70,7 @@ export function BrainChatPage() {
         </span>
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-bold tracking-[-0.01em] text-ink">
-            {BRAND.workspace} brain
+            {workspaceName} brain
           </div>
           <StatusIndicator
             tone="live"
@@ -121,7 +128,7 @@ export function BrainChatPage() {
               }}
               placeholder={
                 ready
-                  ? `Ask ${BRAND.workspace}'s brain anything…`
+                  ? `Ask ${workspaceName}'s brain anything…`
                   : "The brain isn't ready yet"
               }
               aria-label="Ask the brain"

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { AppIcon, SourceIcon } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
 import { interactionsApi } from "@/features/skills/api";
-import { isApiError } from "@/lib/api";
+import { formatRelativeTime } from "@/utils/date";
 
 import type { BrainProvenance, Trust } from "../api";
 import type { ChatMessage as ChatMessageType } from "../types";
@@ -34,18 +34,41 @@ function primaryActor(p: BrainProvenance) {
   return null;
 }
 
-/** A single chat bubble — user (right) or brain (left, with sources). */
-export function ChatMessage({ message }: ChatMessageProps) {
+/**
+ * "This answer was wrong" — lowers the recorded confidence and may open a
+ * review item.
+ *
+ * Its own component so the mutation is created only for the answers that can
+ * actually be flagged. Mounted on every bubble, it would subscribe user
+ * messages, the greeting and error bubbles to the mutation cache too, and the
+ * transcript grows for the life of the session.
+ */
+function FlagAnswerButton({ interactionId }: { interactionId: string }) {
   const override = useMutation({
-    mutationFn: (interactionId: string) => interactionsApi.override(interactionId),
+    mutationFn: () => interactionsApi.override(interactionId),
     onSuccess: () =>
       toast.success("Thanks — flagged for review", {
         description: "This answer's confidence was lowered and it may open a review item.",
       }),
-    onError: (error) =>
-      toast.error(isApiError(error) ? error.message : "Couldn't record that feedback."),
+    meta: { errorMessage: "Couldn't record that feedback." },
   });
 
+  return (
+    <button
+      type="button"
+      aria-label="Flag this answer as wrong"
+      title="Flag this answer as wrong"
+      disabled={override.isPending || override.isSuccess}
+      onClick={() => override.mutate()}
+      className="grid size-6 place-items-center rounded-md text-ink-4 transition-colors hover:bg-cream hover:text-ink disabled:opacity-40"
+    >
+      <AppIcon name="warning" size={13} />
+    </button>
+  );
+}
+
+/** A single chat bubble — user (right) or brain (left, with sources). */
+export function ChatMessage({ message }: ChatMessageProps) {
   if (message.role === "you") {
     return (
       <div className="max-w-[82%] self-end rounded-[14px_14px_4px_14px] bg-solid px-3.5 py-2.5 text-sm leading-relaxed text-solid-ink">
@@ -111,16 +134,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
             )}
 
             {message.interactionId && (
-              <button
-                type="button"
-                aria-label="Flag this answer as wrong"
-                title="Flag this answer as wrong"
-                disabled={override.isPending || override.isSuccess}
-                onClick={() => override.mutate(message.interactionId!)}
-                className="grid size-6 place-items-center rounded-md text-ink-4 transition-colors hover:bg-cream hover:text-ink disabled:opacity-40"
-              >
-                <AppIcon name="warning" size={13} />
-              </button>
+              <FlagAnswerButton interactionId={message.interactionId} />
             )}
           </div>
         )}
@@ -128,7 +142,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
         {actor && (
           <p className="mt-1.5 px-0.5 text-[11.5px] text-ink-4">
             {actor.label} {actor.name}
-            {actor.at && ` · ${new Date(actor.at).toLocaleDateString()}`}
+            {formatRelativeTime(actor.at) && ` · ${formatRelativeTime(actor.at)}`}
           </p>
         )}
       </div>

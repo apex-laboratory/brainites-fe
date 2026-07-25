@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AppIcon, SectionLabel, SourceIcon } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,9 @@ import { WriteCorrectionDialog } from "./WriteCorrectionDialog";
 
 /** Which way the card slides as it leaves the queue. */
 type ExitDir = "right" | "left" | "up";
+
+/** Exit animation, landing just inside the card's 300ms transition. */
+const EXIT_MS = 280;
 
 export interface ReviewCardProps {
   review: Review;
@@ -37,12 +40,38 @@ export function ReviewCard({
   onToggleSelect,
 }: ReviewCardProps) {
   const [exit, setExit] = useState<ExitDir | null>(null);
+  const resolving = exit !== null;
+
+  /** The resolution waiting on the exit animation, if one is in flight. */
+  const pending = useRef<{ timer: number; run: () => void } | null>(null);
 
   // Play a brief exit animation, then run the resolution once it's off-screen.
+  // Idempotent: once a dismissal is animating out, later clicks are ignored so a
+  // double-click can't fire the resolve mutation (and its POST) twice.
   const dismiss = (dir: ExitDir, run: () => void) => {
+    if (resolving) return;
     setExit(dir);
-    window.setTimeout(run, 280);
+    const timer = window.setTimeout(() => {
+      pending.current = null;
+      run();
+    }, EXIT_MS);
+    pending.current = { timer, run };
   };
+
+  // Unmounting mid-animation (navigating away, the queue refetching underneath
+  // us) makes the animation moot but not the user's decision — so flush the
+  // resolution rather than dropping it on the floor. Cancelling instead would
+  // silently discard an approval the user already clicked.
+  useEffect(
+    () => () => {
+      const inFlight = pending.current;
+      if (!inFlight) return;
+      pending.current = null;
+      window.clearTimeout(inFlight.timer);
+      inFlight.run();
+    },
+    [],
+  );
 
   const act = (verdict: ReviewVerdict) =>
     dismiss(verdict === "approve" ? "right" : "left", () => onResolve(review.id, verdict));
@@ -127,6 +156,7 @@ export function ReviewCard({
             <Button
               variant="outline"
               size="sm"
+              disabled={resolving}
               onClick={() => applyResolve({ choice: "source_a" })}
             >
               Keep current
@@ -134,6 +164,7 @@ export function ReviewCard({
             <Button
               variant="outline"
               size="sm"
+              disabled={resolving}
               onClick={() => applyResolve({ choice: "source_b" })}
             >
               Use proposed
@@ -142,6 +173,7 @@ export function ReviewCard({
               title="Write the authoritative version"
               description="Neither source is right on its own — write the correct logic. It publishes at full confidence."
               defaultValue={review.after}
+              reviewId={review.id}
               submitLabel="Resolve with this"
               onSubmit={(body) => applyResolve({ choice: "write", correction: body })}
               trigger={
@@ -154,12 +186,18 @@ export function ReviewCard({
           </div>
         ) : (
           <div className="ml-auto flex flex-wrap gap-2.5">
-            <Button variant="outline" size="sm" onClick={() => act("reject")}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resolving}
+              onClick={() => act("reject")}
+            >
               <AppIcon name="close" size={15} />
               Reject
             </Button>
             <WriteCorrectionDialog
               defaultValue={review.after}
+              reviewId={review.id}
               onSubmit={applyWrite}
               trigger={
                 <Button variant="outline" size="sm">
@@ -170,6 +208,7 @@ export function ReviewCard({
             />
             <Button
               size="sm"
+              disabled={resolving}
               className="bg-green text-white shadow-soft-1 hover:bg-green/90"
               onClick={() => act("approve")}
             >

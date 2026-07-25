@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
+import { useReview } from "../hooks/useReview";
 import type { WriteReviewBody } from "../api";
 
 export interface WriteCorrectionDialogProps {
@@ -20,6 +21,12 @@ export interface WriteCorrectionDialogProps {
   description?: string;
   /** Prefill for the base-logic editor (e.g. the review's proposed text). */
   defaultValue?: string;
+  /**
+   * The review being corrected. When set, the dialog re-reads it on open so the
+   * reviewer edits the *current* proposed text rather than a queue row that may
+   * have been fetched minutes ago.
+   */
+  reviewId?: string;
   submitLabel?: string;
   /** Fired with the authored correction when the reviewer submits. */
   onSubmit: (body: WriteReviewBody) => void;
@@ -35,15 +42,23 @@ export function WriteCorrectionDialog({
   title = "Write the correct logic",
   description = "Replace the proposed change with the correct version. It publishes at full confidence (human-confirmed).",
   defaultValue = "",
+  reviewId,
   submitLabel = "Publish correction",
   onSubmit,
 }: WriteCorrectionDialogProps) {
   const [open, setOpen] = useState(false);
-  const [baseLogic, setBaseLogic] = useState(defaultValue);
+  // `null` means "untouched", so the prefill can still change underneath the
+  // editor when the fresh read lands. Storing a copy of the prefill instead
+  // would pin the textarea to whatever was known at mount.
+  const [draft, setDraft] = useState<string | null>(null);
   const [comment, setComment] = useState("");
 
+  const { review, isLoading } = useReview(open && reviewId ? reviewId : null);
+  const prefill = review?.after ?? defaultValue;
+  const baseLogic = draft ?? prefill;
+
   const reset = () => {
-    setBaseLogic(defaultValue);
+    setDraft(null);
     setComment("");
   };
 
@@ -85,10 +100,15 @@ export function WriteCorrectionDialog({
               id="correction-logic"
               autoFocus
               value={baseLogic}
-              onChange={(event) => setBaseLogic(event.target.value)}
+              onChange={(event) => setDraft(event.target.value)}
               placeholder="Refunds are allowed within 30 days of delivery for unopened items…"
               rows={6}
             />
+            {isLoading && (
+              <span className="text-[12px] text-ink-4">
+                Checking for a newer version…
+              </span>
+            )}
           </div>
           <div className="flex flex-col gap-1.5">
             <label htmlFor="correction-comment" className="text-[13px] font-semibold text-ink-2">

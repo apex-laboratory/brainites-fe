@@ -4,7 +4,6 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -137,12 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // ── Rehydrate on mount ────────────────────────────────────────────────────
   // If a refresh token survives in storage, silently mint a fresh access token,
   // then pull authoritative identity from `GET /auth/me` and overwrite the
-  // cached snapshot. Runs once.
-  const didHydrate = useRef(false);
+  // cached snapshot.
+  //
+  // No run-once ref here on purpose: pairing a persistent guard with a per-run
+  // `active` cleanup flag deadlocks under StrictMode — the remount early-returns
+  // while the first run's in-flight chain has already been cancelled, so
+  // `setStatus` never fires and auth hangs on "loading". The cleanup flag alone
+  // is StrictMode-safe, and `refreshTokens()` is single-flight so the double
+  // invoke shares one refresh.
   useEffect(() => {
-    if (didHydrate.current) return;
-    didHydrate.current = true;
-
     let active = true;
     if (hasSession() && snapshot) {
       refreshTokens()

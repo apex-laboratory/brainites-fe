@@ -12,6 +12,14 @@ const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+// Constructing an `Intl` formatter is the expensive part; formatting is cheap.
+// Build it once at module load rather than per call (per row, per re-map).
+const ABSOLUTE_DATE = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 /**
  * Compact relative label for an ISO timestamp — "just now", "4m ago", "3h ago",
  * "2d ago" — falling back to an absolute date beyond 30 days. Returns `null`
@@ -32,9 +40,5 @@ export function formatRelativeTime(
   if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)}h ago`;
   if (elapsed < 30 * DAY) return `${Math.floor(elapsed / DAY)}d ago`;
 
-  return new Date(then).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return ABSOLUTE_DATE.format(then);
 }

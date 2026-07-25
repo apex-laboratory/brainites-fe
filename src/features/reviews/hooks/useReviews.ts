@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
-import { isApiError } from "@/lib/api";
-import { SOURCES } from "@/constants/sources";
-import type { SourceId } from "@/types/common";
+import {
+  optimisticRemove,
+  rollbackRemove,
+  type OptimisticSnapshot,
+} from "@/lib/api";
 
 import {
   reviewKeys,
@@ -14,38 +16,45 @@ import {
   type ResolveContradictionBody,
   type WriteReviewBody,
 } from "../api";
-import type { Review } from "../types";
+import { mapReview } from "../mappers";
 
 export type ReviewVerdict = "approve" | "reject";
 
-/** Backend kind → a human label; unknown kinds pass through unchanged. */
-const KIND_LABEL: Record<string, string> = {
-  policy_change: "Policy change",
-  new_decision: "New decision",
-  contradiction: "Contradiction",
-  exception: "Exception",
-};
-
-function asSourceId(provider: string | null | undefined): SourceId | null {
-  return provider && provider in SOURCES ? (provider as SourceId) : null;
+/** The queue-cache operations every resolution path shares. */
+interface QueueCache {
+  remove: (ids: string[]) => Promise<OptimisticSnapshot<ReviewOut>>;
+  rollback: (context: OptimisticSnapshot<ReviewOut> | undefined) => void;
+  invalidate: () => Promise<void>;
 }
 
-/** Map the backend `ReviewOut` onto the card's view model, defaulting the many
- * nullable fields so the UI never renders `null`. */
-function mapReview(r: ReviewOut): Review {
-  return {
-    id: r.id,
-    title: r.title,
-    src: asSourceId(r.sourceProvider),
-    where: r.sourceLocation ?? "",
-    kind: KIND_LABEL[r.kind] ?? r.kind,
-    before: r.beforeText ?? "",
-    after: r.afterText ?? "",
-    quote: r.evidenceQuote ?? "",
-    who: r.evidenceAuthor ?? "",
-    conf: r.confidence ?? 0,
-    isContradiction: r.kind === "contradiction",
-  };
+/**
+ * One resolution mutation.
+ *
+ * Approve, reject, write and bulk-approve are the same mutation pointed at
+ * different endpoints: drop the affected rows from the queue immediately,
+ * restore them if the request fails, refetch either way. Only the request, the
+ * ids it touches, and the two strings actually differ — so those are the
+ * parameters, and the optimistic contract has one definition rather than four.
+ */
+function useResolution<V, R>(
+  cache: QueueCache,
+  options: {
+    mutationFn: (variables: V) => Promise<R>;
+    /** Which queue rows this call resolves. */
+    ids: (variables: V) => string[];
+    /** Success toast copy, from the result and what was sent. */
+    onDone: (result: R, variables: V) => string;
+    errorMessage: string;
+  },
+) {
+  return useMutation<R, Error, V, OptimisticSnapshot<ReviewOut>>({
+    mutationFn: options.mutationFn,
+    onMutate: (variables) => cache.remove(options.ids(variables)),
+    onSuccess: (result, variables) => toast.success(options.onDone(result, variables)),
+    onError: (_err, _vars, context) => cache.rollback(context),
+    onSettled: () => cache.invalidate(),
+    meta: { errorMessage: options.errorMessage },
+  });
 }
 
 /**
@@ -83,105 +92,82 @@ export function useReviews() {
 
   // Optimistic removal shared by every resolution path: drop the given ids from
   // the pending list, snapshotting for rollback on failure.
-  const removeFromQueue = async (ids: string[]) => {
-    await queryClient.cancelQueries({ queryKey: listKey });
-    const previous = queryClient.getQueryData<ReviewOut[]>(listKey);
-    const drop = new Set(ids);
-    queryClient.setQueryData<ReviewOut[]>(listKey, (current) =>
-      current?.filter((review) => !drop.has(review.id)),
-    );
-    return { previous };
+  const cache: QueueCache = {
+    remove: (ids) => optimisticRemove<ReviewOut>(queryClient, listKey, ids),
+    rollback: (context) => rollbackRemove(queryClient, listKey, context),
+    invalidate: () =>
+      queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) }),
   };
-  const rollback = (context: { previous?: ReviewOut[] } | undefined) => {
-    if (context?.previous) queryClient.setQueryData(listKey, context.previous);
-  };
-  const invalidate = () =>
-    queryClient.invalidateQueries({ queryKey: reviewKeys.all(workspaceId) });
 
-  const resolve = useMutation({
+  const resolve = useResolution(cache, {
     mutationFn: ({ id, verdict }: { id: string; verdict: ReviewVerdict }) =>
       verdict === "approve" ? reviewsApi.approve(id) : reviewsApi.reject(id),
-    onMutate: ({ id }) => removeFromQueue([id]),
-    onSuccess: (_result, { verdict }) => {
-      toast.success(
-        verdict === "approve"
-          ? "Approved · merged into the brain"
-          : "Rejected · change discarded",
-      );
-    },
-    // Overriding onError opts out of the global toast — restore + raise our own.
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't record that review");
-    },
-    onSettled: invalidate,
+    ids: ({ id }) => [id],
+    onDone: (_result, { verdict }) =>
+      verdict === "approve"
+        ? "Approved · merged into the brain"
+        : "Rejected · change discarded",
+    errorMessage: "Couldn't record that review",
   });
 
   // Reviewer authors the correct skill logic directly (POST /reviews/{id}/write).
-  const writeMut = useMutation({
+  const writeMut = useResolution(cache, {
     mutationFn: ({ id, body }: { id: string; body: WriteReviewBody }) =>
       reviewsApi.write(id, body),
-    onMutate: ({ id }) => removeFromQueue([id]),
-    onSuccess: () => toast.success("Correction published · confidence 1.0"),
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't publish the correction");
-    },
-    onSettled: invalidate,
+    ids: ({ id }) => [id],
+    onDone: () => "Correction published · confidence 1.0",
+    errorMessage: "Couldn't publish the correction",
   });
 
   // Resolve a contradiction card (POST /reviews/{id}/resolve).
-  const contradictionMut = useMutation({
+  const contradictionMut = useResolution(cache, {
     mutationFn: ({ id, body }: { id: string; body: ResolveContradictionBody }) =>
       reviewsApi.resolve(id, body),
-    onMutate: ({ id }) => removeFromQueue([id]),
-    onSuccess: () => toast.success("Contradiction resolved"),
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't resolve the contradiction");
-    },
-    onSettled: invalidate,
+    ids: ({ id }) => [id],
+    onDone: () => "Contradiction resolved",
+    errorMessage: "Couldn't resolve the contradiction",
   });
 
   // Approve many sweep-sourced reviews at once (POST /reviews/bulk-approve).
-  const bulkMut = useMutation({
+  const bulkMut = useResolution(cache, {
     mutationFn: ({ ids, comment }: { ids: string[]; comment?: string }) =>
       reviewsApi.bulkApprove(ids, comment),
-    onMutate: ({ ids }) => removeFromQueue(ids),
-    onSuccess: (result) => {
-      toast.success(
-        result.skipped > 0
-          ? `Approved ${result.approved} · skipped ${result.skipped}`
-          : `Approved ${result.approved}`,
-      );
-    },
-    onError: (err, _vars, context) => {
-      rollback(context);
-      toast.error(isApiError(err) ? err.message : "Couldn't approve those reviews");
-    },
-    onSettled: invalidate,
+    ids: ({ ids }) => ids,
+    onDone: (result) =>
+      result.skipped > 0
+        ? `Approved ${result.approved} · skipped ${result.skipped}`
+        : `Approved ${result.approved}`,
+    errorMessage: "Couldn't approve those reviews",
   });
 
+  // Depend on `mutate`, not the mutation: useMutation returns a new object every
+  // render, so listing the mutation itself would rebuild these on every render —
+  // the exact thing the useCallback is there to prevent. `mutate` is stable.
+  const { mutate: resolveMutate } = resolve;
+  const { mutate: writeMutate } = writeMut;
+  const { mutate: contradictionMutate } = contradictionMut;
+  const { mutate: bulkMutate } = bulkMut;
+
   const approve = useCallback(
-    (id: string) => resolve.mutate({ id, verdict: "approve" }),
-    [resolve],
+    (id: string) => resolveMutate({ id, verdict: "approve" }),
+    [resolveMutate],
   );
   const reject = useCallback(
-    (id: string) => resolve.mutate({ id, verdict: "reject" }),
-    [resolve],
+    (id: string) => resolveMutate({ id, verdict: "reject" }),
+    [resolveMutate],
   );
   const write = useCallback(
-    (id: string, body: WriteReviewBody) => writeMut.mutate({ id, body }),
-    [writeMut],
+    (id: string, body: WriteReviewBody) => writeMutate({ id, body }),
+    [writeMutate],
   );
   const resolveContradiction = useCallback(
     (id: string, body: ResolveContradictionBody) =>
-      contradictionMut.mutate({ id, body }),
-    [contradictionMut],
+      contradictionMutate({ id, body }),
+    [contradictionMutate],
   );
   const bulkApprove = useCallback(
-    (ids: string[], comment?: string) => bulkMut.mutate({ ids, comment }),
-    [bulkMut],
+    (ids: string[], comment?: string) => bulkMutate({ ids, comment }),
+    [bulkMutate],
   );
 
   return {

@@ -4,7 +4,7 @@ import {
   useOnboardingFlow,
   useOnboardingProgress,
 } from "@/features/onboarding/hooks";
-import { toTeamSize, toUseCase } from "@/features/onboarding/api";
+import { toCompanyStep } from "@/features/onboarding/api";
 import { StepWelcome } from "@/features/onboarding/components/StepWelcome";
 import { StepCompany } from "@/features/onboarding/components/StepCompany";
 import { StepConnect } from "@/features/onboarding/components/StepConnect";
@@ -38,12 +38,7 @@ export function OnboardingPage() {
         return; // mutation surfaces the error toast; stay on the step
       }
     } else {
-      saveProgress({
-        step: "company",
-        companyName: company.company.trim(),
-        teamSize: toTeamSize(company.size),
-        primaryUseCase: toUseCase(company.useCase),
-      });
+      saveProgress(toCompanyStep(company));
     }
     next();
   };

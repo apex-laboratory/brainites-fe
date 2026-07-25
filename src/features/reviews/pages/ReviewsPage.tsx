@@ -86,7 +86,7 @@ export function ReviewsPage() {
           <div className="flex-1">
             <div className="mb-2 flex justify-between">
               <span className="text-[13.5px] font-semibold text-ink">
-                Today&apos;s review progress
+                Review queue cleared
               </span>
               <span className="tnum text-[12.5px] text-ink-3">
                 {done} / {total}

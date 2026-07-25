@@ -128,9 +128,20 @@ async function doRefresh(): Promise<string> {
   }
 
   if (!res.ok) {
-    clearTokens();
-    emitSessionExpired();
-    throw new ApiError("unauthorized", "Session expired", res.status);
+    // Only an explicit auth rejection means the refresh token is actually dead.
+    // A transient 5xx/429 (proxy hiccup, mid-deploy 502, rate limit) must NOT
+    // evict a live session — surface it as retryable and keep the marker, so the
+    // request can be retried once connectivity/backend recovers.
+    if (res.status === 401 || res.status === 403) {
+      clearTokens();
+      emitSessionExpired();
+      throw new ApiError("unauthorized", "Session expired", res.status);
+    }
+    throw new ApiError(
+      res.status === 429 ? "rate_limited" : "server_error",
+      "Could not refresh the session",
+      res.status,
+    );
   }
 
   const body = (await res.json()) as {

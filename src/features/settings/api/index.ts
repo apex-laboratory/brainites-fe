@@ -13,6 +13,8 @@ export {
 } from "./settings.schemas";
 export { apiKeysApi, apiKeyKeys, type CreateApiKeyInput } from "./apiKeys.api";
 export {
+  API_KEY_SCOPES,
+  SCOPE_LABEL,
   type ApiKeyCreated,
   type ApiKeyScope,
   type ApiKeySummary,

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
 import { AppLogo } from "@/components/shared/AppLogo";
+import { Spinner } from "@/components/shared/QueryState";
 import { Button } from "@/components/ui/button";
 import { ROUTES } from "@/constants/routes";
 import { clearOAuthProvider, recallOAuthProvider } from "@/features/auth/api";
@@ -76,7 +77,7 @@ export function OAuthCallbackPage() {
         ) : (
           <>
             <div className="mt-8 flex justify-center">
-              <div className="size-6 animate-spin rounded-full border-2 border-line border-t-brand-ink" />
+              <Spinner label="Completing sign-in" />
             </div>
             <p className="mt-4 text-[14.5px] text-ink-3">Completing sign-in…</p>
           </>

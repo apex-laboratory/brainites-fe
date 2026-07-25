@@ -54,9 +54,6 @@ export function AppRouter() {
 
       <Route element={<RequireWorkspace />}>
         <Route path="/settings/sources" element={<SourcesCallbackRedirect />} />
-      </Route>
-
-      <Route element={<RequireWorkspace />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<OverviewPage />} />
           <Route path="chat" element={<BrainChatPage />} />

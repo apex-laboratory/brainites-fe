@@ -83,6 +83,39 @@ export function EmptyState({
   );
 }
 
+export interface SpinnerProps {
+  /** Diameter in px. */
+  size?: number;
+  /** `brand` reads on light surfaces, `light` on dark ones. */
+  tone?: "brand" | "light";
+  /**
+   * Accessible label. Provide it when the spinner is the only thing announcing
+   * the wait; omit it for one sitting inside already-labelled copy, which makes
+   * the spinner decorative.
+   */
+  label?: string;
+  className?: string;
+}
+
+/** The app's one loading spinner. */
+export function Spinner({ size = 24, tone = "brand", label, className }: SpinnerProps) {
+  return (
+    <span
+      role={label ? "status" : undefined}
+      aria-label={label}
+      aria-hidden={label ? undefined : true}
+      style={{ width: size, height: size }}
+      className={cn(
+        "block shrink-0 rounded-full border-2 motion-safe:animate-spin",
+        tone === "brand"
+          ? "border-line border-t-brand-ink"
+          : "border-white/30 border-t-white",
+        className,
+      )}
+    />
+  );
+}
+
 /** Neutral shimmer block used to compose per-list loading skeletons. */
 export function Skeleton({ className }: { className?: string }) {
   return (
