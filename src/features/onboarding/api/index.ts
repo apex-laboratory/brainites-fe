@@ -1,6 +1,8 @@
 export {
   onboardingApi,
   onboardingKeys,
+  toCompanyStep,
+  toWorkspaceInput,
   type CreateWorkspaceInput,
   type SaveStepInput,
 } from "./onboarding.api";

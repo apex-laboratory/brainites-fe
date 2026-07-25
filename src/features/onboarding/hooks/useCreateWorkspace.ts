@@ -2,13 +2,9 @@ import { useMutation } from "@tanstack/react-query";
 
 import { useAuth } from "@/app/providers/AuthProvider";
 
-import {
-  onboardingApi,
-  toTeamSize,
-  toUseCase,
-  type CreateWorkspaceInput,
-} from "../api";
+import { onboardingApi, toCompanyStep, toWorkspaceInput } from "../api";
 import type { CompanyForm } from "../types";
+import { useOnboardingProgress } from "./useOnboardingProgress";
 
 /**
  * Create the workspace from the company-setup form. On success it adopts the
@@ -21,28 +17,17 @@ import type { CompanyForm } from "../types";
  */
 export function useCreateWorkspace() {
   const { activateWorkspace } = useAuth();
+  const saveProgress = useOnboardingProgress();
 
   return useMutation({
     mutationFn: async (company: CompanyForm) => {
-      const input: CreateWorkspaceInput = {
-        companyName: company.company.trim(),
-        teamSize: toTeamSize(company.size),
-        primaryUseCase: toUseCase(company.useCase),
-      };
-
-      const result = await onboardingApi.createWorkspace(input);
+      const result = await onboardingApi.createWorkspace(toWorkspaceInput(company));
       // Swap the token synchronously before any workspace-scoped call fires.
       activateWorkspace(result.workspace, result.accessToken);
 
-      // Progress persistence is best-effort — never block the wizard on it.
-      void onboardingApi
-        .saveStep(result.workspace.id, {
-          step: "company",
-          companyName: input.companyName,
-          teamSize: input.teamSize,
-          primaryUseCase: input.primaryUseCase,
-        })
-        .catch(() => {});
+      // Best-effort, never blocking the wizard. The id is explicit because the
+      // workspace we just created hasn't reached the progress hook's closure yet.
+      saveProgress(toCompanyStep(company), result.workspace.id);
 
       return result;
     },

@@ -1,9 +1,12 @@
 import { api } from "@/lib/api";
 
+import type { CompanyForm } from "../types";
 import {
   CreateWorkspaceResultSchema,
   OnboardingResultSchema,
   SweepSchema,
+  toTeamSize,
+  toUseCase,
   type CreateWorkspaceResult,
   type OnboardingResult,
   type OnboardingStepValue,
@@ -35,6 +38,24 @@ export interface SaveStepInput {
   connectedProviders?: string[];
   timeRange?: TimeRange;
   channels?: Record<string, string[]>;
+}
+
+/**
+ * The company form as a `POST /workspaces` body. The wizard's display strings
+ * ("11–50 people") become the backend's enums here and nowhere else, so callers
+ * never need `toTeamSize` / `toUseCase` themselves.
+ */
+export function toWorkspaceInput(company: CompanyForm): CreateWorkspaceInput {
+  return {
+    companyName: company.company.trim(),
+    teamSize: toTeamSize(company.size),
+    primaryUseCase: toUseCase(company.useCase),
+  };
+}
+
+/** The same company answers as the `company` onboarding-progress step. */
+export function toCompanyStep(company: CompanyForm): SaveStepInput {
+  return { step: "company", ...toWorkspaceInput(company) };
 }
 
 /**

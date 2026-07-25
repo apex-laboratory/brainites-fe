@@ -9,14 +9,18 @@ import { onboardingApi, type SaveStepInput } from "../api";
  * PATCHes `/{workspaceId}/onboarding` without blocking navigation or surfacing
  * a toast — progress tracking is a convenience, not a gate. No-ops until a
  * workspace exists (i.e. before the company step creates one).
+ *
+ * The id may be passed explicitly for the one caller that records progress
+ * *during* workspace creation, where this hook's own closure is a render behind.
  */
 export function useOnboardingProgress() {
   const { workspaceId } = useAuth();
 
   return useCallback(
-    (input: SaveStepInput) => {
-      if (!workspaceId) return;
-      void onboardingApi.saveStep(workspaceId, input).catch(() => {});
+    (input: SaveStepInput, explicitWorkspaceId?: string) => {
+      const id = explicitWorkspaceId ?? workspaceId;
+      if (!id) return;
+      void onboardingApi.saveStep(id, input).catch(() => {});
     },
     [workspaceId],
   );
