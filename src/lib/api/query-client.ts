@@ -37,6 +37,17 @@ function errorToastMessage(err: unknown, meta?: MutationErrorMeta): string {
 }
 
 /**
+ * The server's trace id, shown under the message. It's the only handle backend
+ * has when a user reports a failure, so a toast that omits it makes the report
+ * unactionable.
+ */
+function errorToastReference(err: unknown): string | undefined {
+  return isApiError(err) && err.requestId
+    ? `Reference: ${err.requestId}`
+    : undefined;
+}
+
+/**
  * App-wide TanStack Query defaults.
  *  - Retry only transient failures, and only a couple of times.
  *  - Every mutation gets a sane error toast for free, tuned through `meta`.
@@ -49,7 +60,9 @@ export const queryClient = new QueryClient({
     onError: (err, _variables, _context, mutation) => {
       const meta = mutation.meta;
       if (meta?.errorToast === false) return;
-      toast.error(errorToastMessage(err, meta));
+      toast.error(errorToastMessage(err, meta), {
+        description: errorToastReference(err),
+      });
     },
   }),
   defaultOptions: {

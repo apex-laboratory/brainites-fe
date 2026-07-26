@@ -35,6 +35,13 @@ export function useOnboardingFlow() {
   );
   const back = useCallback(() => setStepIndex((i) => Math.max(0, i - 1)), []);
 
+  /** Jump straight to a step, skipping the ones between (used to resume an
+   * in-flight sweep on load, which lands the user mid-wizard by definition). */
+  const goTo = useCallback((step: OnboardingStep) => {
+    const index = STEP_ORDER.indexOf(step);
+    if (index !== -1) setStepIndex(index);
+  }, []);
+
   const setCompany = useCallback(
     (patch: Partial<CompanyForm>) =>
       setCompanyState((c) => ({ ...c, ...patch })),
@@ -42,7 +49,7 @@ export function useOnboardingFlow() {
   );
 
   return useMemo(
-    () => ({ step: STEP_ORDER[stepIndex], next, back, company, setCompany }),
-    [stepIndex, next, back, company, setCompany]
+    () => ({ step: STEP_ORDER[stepIndex], next, back, goTo, company, setCompany }),
+    [stepIndex, next, back, goTo, company, setCompany]
   );
 }

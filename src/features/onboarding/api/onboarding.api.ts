@@ -2,11 +2,13 @@ import { api } from "@/lib/api";
 
 import type { CompanyForm } from "../types";
 import {
+  ActiveSweepSchema,
   CreateWorkspaceResultSchema,
   OnboardingResultSchema,
   SweepSchema,
   toTeamSize,
   toUseCase,
+  type ActiveSweep,
   type CreateWorkspaceResult,
   type OnboardingResult,
   type OnboardingStepValue,
@@ -71,15 +73,27 @@ export const onboardingApi = {
   saveStep: (workspaceId: string, input: SaveStepInput): Promise<OnboardingResult> =>
     api.patch(`/workspaces/${workspaceId}/onboarding`, OnboardingResultSchema, input),
 
-  /** Kick off the onboarding sweep. Idempotent server-side (202 new / 200 existing). */
+  /**
+   * Kick off the onboarding sweep. Takes no body — the backend picks each
+   * connector's backfill defaults, so there is nothing to parameterize here.
+   *
+   * Idempotent server-side: `202` for a new sweep, `200` when one was already
+   * running. Both carry the same `SweepOut`, and the client only ever reads
+   * `data`, so the two are indistinguishable to the caller by construction.
+   */
   startSweep: (): Promise<Sweep> => api.post("/sweeps", SweepSchema),
 
   getSweep: (sweepId: string): Promise<Sweep> =>
     api.get(`/sweeps/${sweepId}`, SweepSchema),
+
+  /** The in-flight sweep for this workspace, or `null`. Lets a reload resume. */
+  activeSweep: (): Promise<ActiveSweep> =>
+    api.get("/sweeps/active", ActiveSweepSchema),
 };
 
 /** Query keys for onboarding-owned server state (the sweep poll). */
 export const onboardingKeys = {
   sweep: (workspaceId: string, sweepId: string) =>
     ["sweep", workspaceId, sweepId] as const,
+  activeSweep: (workspaceId: string) => ["sweep", workspaceId, "active"] as const,
 };

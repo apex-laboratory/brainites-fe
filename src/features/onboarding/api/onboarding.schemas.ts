@@ -99,8 +99,52 @@ export const SweepSchema = z.object({
 });
 export type Sweep = z.infer<typeof SweepSchema>;
 
+/**
+ * `GET /sweeps/active` → the in-flight sweep for this workspace, or `null` when
+ * none is running. The whole point of the endpoint is that the client never has
+ * to persist a sweep id: a reload re-discovers it here.
+ */
+export const ActiveSweepSchema = SweepSchema.nullable();
+export type ActiveSweep = z.infer<typeof ActiveSweepSchema>;
+
 /** Sweep-level terminal states. Anything else means "keep polling". */
 const TERMINAL_SWEEP_STATES = new Set(["completed", "failed"]);
 export function isSweepTerminal(sweep: Sweep): boolean {
   return TERMINAL_SWEEP_STATES.has(sweep.status) || sweep.completedAt !== null;
+}
+
+/** One provider's row in the sweep progress map, flattened for rendering. */
+export type SweepProviderProgress = {
+  provider: string;
+  status: string;
+  inserted: number;
+  /** Only ever set on a failed provider. */
+  error: string | null;
+};
+
+/**
+ * The `progress` map as a list.
+ *
+ * `progress` is keyed by **provider**, not by connection — two connected Drive
+ * accounts collapse into one `google_drive` entry with summed counts — so these
+ * rows deliberately don't line up one-to-one with `GET /sources`.
+ */
+export function sweepProviders(sweep: Sweep): SweepProviderProgress[] {
+  return Object.entries(sweep.progress).map(([provider, entry]) => ({
+    provider,
+    status: entry.status,
+    inserted: entry.inserted ?? 0,
+    error: entry.error ?? null,
+  }));
+}
+
+/**
+ * Providers that failed inside the sweep.
+ *
+ * A sweep only reports `status: "failed"` when *every* attempted source failed,
+ * so a `completed` sweep routinely carries individual failures. They have to be
+ * read out of `progress` or they're invisible.
+ */
+export function sweepFailures(sweep: Sweep): SweepProviderProgress[] {
+  return sweepProviders(sweep).filter((entry) => entry.status === "failed");
 }

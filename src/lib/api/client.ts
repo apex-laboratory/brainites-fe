@@ -148,6 +148,9 @@ function normalizeCode(raw: string | undefined, fallback: ApiError["code"]): Api
   const known: ApiError["code"][] = [
     "validation_error", "unauthorized", "forbidden", "not_found",
     "conflict", "rate_limited", "server_error", "network_error", "timeout",
+    // Source-connector failures. `connector_authorization_failed` shares its
+    // 502 with a plain bad gateway, so only the body's code distinguishes them.
+    "not_configured", "connector_authorization_failed",
   ];
   return raw && (known as string[]).includes(raw) ? (raw as ApiError["code"]) : fallback;
 }

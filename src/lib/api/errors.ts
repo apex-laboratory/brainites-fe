@@ -13,7 +13,13 @@ export type ApiErrorCode =
   | "rate_limited"
   | "server_error"
   | "network_error"
-  | "timeout";
+  | "timeout"
+  /** `501` — this deployment has no credentials for the provider. Retrying can
+   * never help; the surface should say "Not available", not offer a retry. */
+  | "not_configured"
+  /** `502` from a source OAuth start — the provider refused authorization. The
+   * server message explains why, so it's shown verbatim. */
+  | "connector_authorization_failed";
 
 /** A single field-level validation detail, normalized from the backend. */
 export interface ApiErrorDetail {
@@ -38,6 +44,14 @@ export class ApiError extends Error {
 
   /** Whether a retry could plausibly succeed (transient failures only). */
   get isRetryable(): boolean {
+    // Both arrive on 5xx statuses but describe a settled configuration or
+    // provider decision — retrying just repeats the same answer.
+    if (
+      this.code === "not_configured" ||
+      this.code === "connector_authorization_failed"
+    ) {
+      return false;
+    }
     return (
       this.code === "network_error" ||
       this.code === "timeout" ||
@@ -64,6 +78,8 @@ export class ApiError extends Error {
         return "conflict";
       case 429:
         return "rate_limited";
+      case 501:
+        return "not_configured";
       default:
         return status >= 500 ? "server_error" : "validation_error";
     }

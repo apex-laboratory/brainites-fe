@@ -16,9 +16,15 @@ export type ConnectVariables = {
  * The provider eventually redirects back to `/settings/sources?connected=…`,
  * which the router forwards to the Sources page (see `SourcesPage`).
  *
- * Failures fall through to the global mutation `onError` toast. The mutation is
- * left in `isPending` after a successful redirect on purpose: the page is being
- * torn down, and a button that stays disabled prevents a double-consent.
+ * Failures are rendered inline by the dialog rather than toasted: the two
+ * connector failures need different affordances — a `not_configured` provider
+ * can never be connected on this deployment, so offering a retry would be a lie,
+ * while `connector_authorization_failed` is worth retrying with the server's
+ * explanation attached to the row that failed.
+ *
+ * The mutation is left in `isPending` after a successful redirect on purpose:
+ * the page is being torn down, and a button that stays disabled prevents a
+ * double-consent.
  */
 export function useConnectSource() {
   return useMutation({
@@ -27,5 +33,6 @@ export function useConnectSource() {
     onSuccess: ({ authorizeUrl }) => {
       window.location.href = authorizeUrl;
     },
+    meta: { errorToast: false },
   });
 }
