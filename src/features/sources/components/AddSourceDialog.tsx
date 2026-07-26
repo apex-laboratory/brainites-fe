@@ -12,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { SOURCE_LIST } from "@/constants/sources";
+import { isApiError, type ApiError } from "@/lib/api";
+import { cn } from "@/utils/cn";
 
 import { SubdomainSchema, needsSubdomain, type SourceProvider } from "../api";
 import { useConnectSource } from "../hooks/useConnectSource";
@@ -33,6 +35,14 @@ export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
   const connect = useConnectSource();
 
   const available = SOURCE_LIST.filter((meta) => !connected.includes(meta.id));
+
+  // Which provider the last failure belongs to, so the message lands on its row
+  // rather than floating above an unrelated list.
+  const failedProvider = connect.isError ? connect.variables?.provider : undefined;
+  const failure = isApiError(connect.error) ? connect.error : null;
+  // 501: this deployment has no credentials for the provider. It isn't coming
+  // back on a retry, so the row loses its Connect button entirely.
+  const notConfigured = failure?.code === "not_configured";
 
   const start = (provider: SourceProvider) => {
     // Zendesk needs a tenant subdomain before we can build the consent URL.
@@ -62,6 +72,9 @@ export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
           <SubdomainForm
             provider={pendingProvider}
             isPending={connect.isPending}
+            // The provider list is hidden here, so this form owns surfacing a
+            // connector failure for the provider it's collecting a subdomain for.
+            failure={failedProvider === pendingProvider ? failure : null}
             onCancel={() => setPendingProvider(null)}
             onSubmit={(subdomain) => connect.mutate({ provider: pendingProvider, subdomain })}
           />
@@ -71,27 +84,47 @@ export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
           </p>
         ) : (
           <div className="flex flex-col gap-2.5">
-            {available.map((meta) => (
-              <div
-                key={meta.id}
-                className="flex items-center gap-3 rounded-xl border border-line bg-paper px-3.5 py-3"
-              >
-                <SourceTile id={meta.id} size={40} iconSize={20} />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-ink">{meta.name}</div>
-                  <div className="truncate text-[12.5px] text-ink-3">{meta.tag}</div>
-                </div>
-                <Button
-                  variant="solid"
-                  size="sm"
-                  disabled={connect.isPending}
-                  onClick={() => start(meta.id)}
+            {available.map((meta) => {
+              const failed = failedProvider === meta.id;
+              const unavailable = failed && notConfigured;
+              return (
+                <div
+                  key={meta.id}
+                  className={cn(
+                    "flex flex-wrap items-center gap-3 rounded-xl border bg-paper px-3.5 py-3",
+                    failed ? "border-amber/50" : "border-line",
+                  )}
                 >
-                  <AppIcon name="link" size={14} />
-                  Connect
-                </Button>
-              </div>
-            ))}
+                  <SourceTile id={meta.id} size={40} iconSize={20} />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-ink">{meta.name}</div>
+                    <div className="truncate text-[12.5px] text-ink-3">{meta.tag}</div>
+                  </div>
+                  {unavailable ? (
+                    <span className="text-[12.5px] font-semibold text-ink-4">
+                      Not available
+                    </span>
+                  ) : (
+                    <Button
+                      variant="solid"
+                      size="sm"
+                      disabled={connect.isPending}
+                      onClick={() => start(meta.id)}
+                    >
+                      <AppIcon name="link" size={14} />
+                      {failed ? "Try again" : "Connect"}
+                    </Button>
+                  )}
+                  {failed && failure && (
+                    <p className="w-full text-[12.5px] text-amber">
+                      {notConfigured
+                        ? `${meta.name} isn't set up on this deployment yet. Ask your admin to add its credentials.`
+                        : failure.message}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </DialogContent>
@@ -103,11 +136,14 @@ export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
 function SubdomainForm({
   provider,
   isPending,
+  failure,
   onCancel,
   onSubmit,
 }: {
   provider: SourceProvider;
   isPending: boolean;
+  /** A connector failure for this provider, if the last attempt failed. */
+  failure: ApiError | null;
   onCancel: () => void;
   onSubmit: (subdomain: string) => void;
 }) {
@@ -144,11 +180,23 @@ function SubdomainForm({
           {error}
         </p>
       )}
+      {failure && (
+        <p className="text-[12.5px] text-amber">
+          {failure.code === "not_configured"
+            ? `${provider} isn't set up on this deployment yet. Ask your admin to add its credentials.`
+            : failure.message}
+        </p>
+      )}
       <div className="flex justify-end gap-2.5">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
           Back
         </Button>
-        <Button type="submit" variant="solid" size="sm" disabled={isPending}>
+        <Button
+          type="submit"
+          variant="solid"
+          size="sm"
+          disabled={isPending || failure?.code === "not_configured"}
+        >
           <AppIcon name="link" size={14} />
           {isPending ? "Connecting…" : "Connect"}
         </Button>

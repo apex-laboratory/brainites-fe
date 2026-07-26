@@ -4,12 +4,7 @@ export {
   useCreateWorkspace,
   useOnboardingProgress,
 } from "./hooks";
-export {
-  SETUP_STEPS,
-  LEARNING_STEPS,
-  TEAM_SIZES,
-  USE_CASES,
-} from "./data/onboarding-fixtures";
+export { SETUP_STEPS, TEAM_SIZES, USE_CASES } from "./data/onboarding-fixtures";
 export type {
   OnboardingStep,
   CompanyForm,

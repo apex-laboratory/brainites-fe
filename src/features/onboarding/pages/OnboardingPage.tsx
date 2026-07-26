@@ -1,5 +1,8 @@
+import { useEffect, useRef } from "react";
+
 import { useAuth } from "@/app/providers/AuthProvider";
 import {
+  useActiveSweep,
   useCreateWorkspace,
   useOnboardingFlow,
   useOnboardingProgress,
@@ -24,9 +27,22 @@ import { StepIntegrate } from "@/features/onboarding/components/StepIntegrate";
  */
 export function OnboardingPage() {
   const { workspaceId, completeOnboarding } = useAuth();
-  const { step, next, back, company, setCompany } = useOnboardingFlow();
+  const { step, next, back, goTo, company, setCompany } = useOnboardingFlow();
   const createWorkspace = useCreateWorkspace();
   const saveProgress = useOnboardingProgress();
+
+  // Resume an in-flight sweep. `GET /sweeps/active` is read on every load, so a
+  // refresh (or a closed tab) during the build lands straight back on "Building
+  // your brain…" instead of restarting the wizard — and no sweep id is ever
+  // persisted client-side. Fires once: after that the user owns navigation.
+  const { sweep: activeSweep } = useActiveSweep();
+  const resumed = useRef(false);
+
+  useEffect(() => {
+    if (resumed.current || !activeSweep) return;
+    resumed.current = true;
+    goTo("learning");
+  }, [activeSweep, goTo]);
 
   // Company → create the workspace (once), then advance. If a workspace already
   // exists (e.g. the user stepped back then forward), just re-record and move on.

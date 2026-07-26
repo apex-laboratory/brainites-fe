@@ -8,12 +8,16 @@ export {
 } from "./onboarding.api";
 export {
   isSweepTerminal,
+  sweepFailures,
+  sweepProviders,
   toTeamSize,
   toTimeRange,
   toUseCase,
+  type ActiveSweep,
   type CreateWorkspaceResult,
   type OnboardingStepValue,
   type Sweep,
+  type SweepProviderProgress,
   type TeamSize,
   type TimeRange,
   type UseCase,
