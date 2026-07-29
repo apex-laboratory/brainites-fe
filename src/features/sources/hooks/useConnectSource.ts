@@ -6,6 +6,10 @@ export type ConnectVariables = {
   provider: SourceProvider;
   /** Required for subdomain-scoped providers (Zendesk); rejected elsewhere. */
   subdomain?: string;
+  /** Allowlisted frontend path the OAuth callback returns to — `/onboarding`
+   * when started mid-wizard, `/dashboard/sources` from the Sources page.
+   * Omitted → the backend default. */
+  returnTo?: string;
 };
 
 /**
@@ -13,8 +17,10 @@ export type ConnectVariables = {
  * provider's consent page — a full-page redirect, per the backend contract
  * ("do not fetch `authorizeUrl` with XHR").
  *
- * The provider eventually redirects back to `/settings/sources?connected=…`,
- * which the router forwards to the Sources page (see `SourcesPage`).
+ * The provider eventually redirects back to `{returnTo}?connected=…` (or the
+ * backend default `/settings/sources`, which the router forwards to the Sources
+ * page). Whichever surface owns that path handles the return leg via
+ * `useConnectionLanding`.
  *
  * Failures are rendered inline by the dialog rather than toasted: the two
  * connector failures need different affordances — a `not_configured` provider
@@ -28,8 +34,8 @@ export type ConnectVariables = {
  */
 export function useConnectSource() {
   return useMutation({
-    mutationFn: ({ provider, subdomain }: ConnectVariables) =>
-      sourcesApi.authorize(provider, subdomain),
+    mutationFn: ({ provider, subdomain, returnTo }: ConnectVariables) =>
+      sourcesApi.authorize(provider, subdomain, returnTo),
     onSuccess: ({ authorizeUrl }) => {
       window.location.href = authorizeUrl;
     },

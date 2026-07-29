@@ -22,14 +22,19 @@ export interface AddSourceDialogProps {
   trigger: ReactNode;
   /** Providers already connected — hidden from the list. */
   connected: SourceProvider[];
+  /** Allowlisted path the OAuth callback returns to, so a connect started here
+   * lands back on this surface (onboarding vs. Sources). Omitted → backend
+   * default (`/settings/sources`, forwarded to the Sources page). */
+  returnTo?: string;
 }
 
 /**
  * "Add source" dialog: pick a provider and begin its OAuth consent flow.
  * Choosing a provider hands the browser to the provider; on return the backend
- * redirects to `/settings/sources?connected=…`, which the Sources page handles.
+ * redirects to `{returnTo}?connected=…` (or the default `/settings/sources`),
+ * which the owning surface handles via `useConnectionLanding`.
  */
-export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
+export function AddSourceDialog({ trigger, connected, returnTo }: AddSourceDialogProps) {
   const [open, setOpen] = useState(false);
   const [pendingProvider, setPendingProvider] = useState<SourceProvider | null>(null);
   const connect = useConnectSource();
@@ -47,7 +52,7 @@ export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
   const start = (provider: SourceProvider) => {
     // Zendesk needs a tenant subdomain before we can build the consent URL.
     if (needsSubdomain(provider)) return setPendingProvider(provider);
-    connect.mutate({ provider });
+    connect.mutate({ provider, returnTo });
   };
 
   return (
@@ -76,7 +81,9 @@ export function AddSourceDialog({ trigger, connected }: AddSourceDialogProps) {
             // connector failure for the provider it's collecting a subdomain for.
             failure={failedProvider === pendingProvider ? failure : null}
             onCancel={() => setPendingProvider(null)}
-            onSubmit={(subdomain) => connect.mutate({ provider: pendingProvider, subdomain })}
+            onSubmit={(subdomain) =>
+              connect.mutate({ provider: pendingProvider, subdomain, returnTo })
+            }
           />
         ) : available.length === 0 ? (
           <p className="py-4 text-center text-[13px] text-ink-3">

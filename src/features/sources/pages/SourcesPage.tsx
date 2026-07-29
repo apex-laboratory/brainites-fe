@@ -8,6 +8,7 @@ import {
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
 
 import { AddSourceDialog } from "../components/AddSourceDialog";
 import { SourceCard } from "../components/SourceCard";
@@ -23,6 +24,7 @@ export function SourcesPage() {
   const addSource = (
     <AddSourceDialog
       connected={sources.map(({ source }) => source.provider)}
+      returnTo={ROUTES.sources}
       trigger={
         <Button variant="outline" size="sm">
           <AppIcon name="plus" size={15} />

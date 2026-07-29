@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SOURCES, SOURCE_ORDER } from "@/constants/sources";
 import { BRAND } from "@/constants/brand";
+import { ROUTES } from "@/constants/routes";
 import type { SourceId } from "@/types/common";
 import { useSources } from "@/features/sources";
 import { AddSourceDialog } from "@/features/sources/components";
@@ -22,9 +23,10 @@ export interface StepConnectProps {
  * and hands off to the real provider OAuth via {@link AddSourceDialog}.
  *
  * Connecting is a full-page redirect to the provider; the backend finishes the
- * exchange and lands the browser on the Sources page — so, per connect-later,
- * this step is skippable ("Continue"/"Skip for now") and sources can also be
- * connected any time from Sources.
+ * exchange and (via `returnTo`) lands the browser back on `/onboarding`, where
+ * `OnboardingPage` restores this step and acknowledges the outcome. Per
+ * connect-later, this step is skippable ("Continue"/"Skip for now") and sources
+ * can also be connected any time from Sources.
  */
 export function StepConnect({ onBack, onNext }: StepConnectProps) {
   const { sources, isPending, isError, error, refetch } = useSources();
@@ -38,6 +40,7 @@ export function StepConnect({ onBack, onNext }: StepConnectProps) {
   const addSourceTrigger = (
     <AddSourceDialog
       connected={[...connectedProviders]}
+      returnTo={ROUTES.onboarding}
       trigger={
         <Button size="sm" className="ml-auto">
           <AppIcon name="link" size={15} />
