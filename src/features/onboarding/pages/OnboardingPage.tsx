@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useConnectionLanding } from "@/features/sources/hooks";
 import {
   useActiveSweep,
   useCreateWorkspace,
@@ -30,6 +32,23 @@ export function OnboardingPage() {
   const { step, next, back, goTo, company, setCompany } = useOnboardingFlow();
   const createWorkspace = useCreateWorkspace();
   const saveProgress = useOnboardingProgress();
+
+  // Return leg of a source OAuth started on the connect step. `returnTo` brings
+  // the browser back to `/onboarding?connected=…` (or `?error=…`); the step
+  // index is in-memory and reset by the full-page redirect, so restore the
+  // connect step and let `useConnectionLanding` toast + invalidate + strip the
+  // param. Presence is captured once at mount, before the param is stripped.
+  const [searchParams] = useSearchParams();
+  const returnedFromConnect = useRef(
+    searchParams.has("connected") || searchParams.has("error"),
+  );
+  useConnectionLanding();
+
+  useEffect(() => {
+    if (!returnedFromConnect.current) return;
+    returnedFromConnect.current = false;
+    goTo("connect");
+  }, [goTo]);
 
   // Resume an in-flight sweep. `GET /sweeps/active` is read on every load, so a
   // refresh (or a closed tab) during the build lands straight back on "Building

@@ -25,13 +25,21 @@ export const sourcesApi = {
    * Begin OAuth. Returns the provider's consent URL — the caller must do a
    * full-page `window.location.href` redirect to it, not an XHR fetch.
    * `subdomain` is required for Zendesk and rejected elsewhere.
+   *
+   * `returnTo` is the frontend path the backend callback redirects back to on
+   * completion (allowlisted server-side to `/onboarding` and `/dashboard/sources`;
+   * anything else silently falls back to the default). Sent camelCase per the
+   * backend contract for this body — do not snake_case it.
    */
-  authorize: (provider: SourceProvider, subdomain?: string): Promise<Authorize> =>
-    api.post(
-      `/sources/${provider}/authorize`,
-      AuthorizeSchema,
-      subdomain ? { subdomain } : {},
-    ),
+  authorize: (
+    provider: SourceProvider,
+    subdomain?: string,
+    returnTo?: string,
+  ): Promise<Authorize> =>
+    api.post(`/sources/${provider}/authorize`, AuthorizeSchema, {
+      ...(subdomain ? { subdomain } : {}),
+      ...(returnTo ? { returnTo } : {}),
+    }),
 
   channels: (sourceId: string): Promise<SourceChannel[]> =>
     api.get(`/sources/${sourceId}/channels`, SourceChannelListSchema),

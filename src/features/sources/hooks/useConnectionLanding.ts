@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { useWorkspaceId } from "@/app/providers/AuthProvider";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { SOURCES } from "@/constants/sources";
 import type { SourceId } from "@/types/common";
 
@@ -21,9 +21,14 @@ import { sourceKeys } from "../api";
  * Invalidation lives here rather than in a caller-supplied callback: the cache
  * key belongs to this feature, so any surface that handles the connect-return
  * (Sources, onboarding's connect step) gets it without knowing what went stale.
+ *
+ * `workspaceId` is read nullable, not via `useWorkspaceId()`, so this is safe to
+ * mount on onboarding (which lives outside `RequireWorkspace`). A connect-return
+ * always carries a workspace, so invalidation still fires when it matters; the
+ * null branch just skips it.
  */
 export function useConnectionLanding() {
-  const workspaceId = useWorkspaceId();
+  const { workspaceId } = useAuth();
   const queryClient = useQueryClient();
   const [params, setParams] = useSearchParams();
   const handled = useRef(false); // StrictMode double-invoke guard
@@ -46,7 +51,9 @@ export function useConnectionLanding() {
       toast.success(`${name} connected`, {
         description: "We'll let you know once the first sync completes.",
       });
-      void queryClient.invalidateQueries({ queryKey: sourceKeys.all(workspaceId) });
+      if (workspaceId) {
+        void queryClient.invalidateQueries({ queryKey: sourceKeys.all(workspaceId) });
+      }
     }
 
     setParams(
