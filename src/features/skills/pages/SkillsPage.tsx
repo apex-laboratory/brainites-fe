@@ -254,9 +254,10 @@ export function SkillsPage() {
                     name: inspectingDraft.name,
                     note,
                   },
-                  // Close on the optimistic write rather than waiting for the
-                  // refetch: the row is about to leave the drafts list, and a
-                  // dialog left open over a vanishing row reads as a hang.
+                  // Close as soon as the write settles — including the "stale"
+                  // 409/404 outcomes, where the row is equally out of date.
+                  // The drafts refetch is about to drop this row, and a dialog
+                  // left open over a vanishing row reads as a hang.
                   { onSuccess: () => setInspectingDraftId(null) },
                 )
         }
