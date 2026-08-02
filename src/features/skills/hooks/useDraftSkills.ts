@@ -27,13 +27,13 @@ const DRAFTS_PAGE_SIZE = 50;
  */
 export function useDraftSkills() {
   const workspaceId = useWorkspaceId();
-  const [searchQuery, setSearchQuery] = useState("");
-  const debouncedQuery = useDebounce(searchQuery.trim().toLowerCase(), 200);
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query.trim().toLowerCase(), 200);
   const hasQuery = debouncedQuery.length > 0;
 
   const params = { status: "draft", limit: DRAFTS_PAGE_SIZE };
 
-  const query = useInfiniteQuery({
+  const queryResult = useInfiniteQuery({
     queryKey: skillKeys.list(workspaceId, params),
     queryFn: ({ pageParam }) =>
       skillsApi.list({ ...params, cursor: pageParam ?? undefined }),
@@ -42,8 +42,8 @@ export function useDraftSkills() {
   });
 
   const rawItems = useMemo<SkillListItem[]>(
-    () => (query.data?.pages ?? []).flatMap((page) => page.items),
-    [query.data],
+    () => (queryResult.data?.pages ?? []).flatMap((page) => page.items),
+    [queryResult.data],
   );
   const skills = useMemo<Skill[]>(() => {
     const matches = hasQuery
@@ -60,13 +60,14 @@ export function useDraftSkills() {
     skills,
     rawItems,
     query,
+    queryResult,
     setQuery,
     hasQuery,
-    isPending: query.isPending,
-    isError: query.isError,
-    error: query.error,
-    hasMore: query.hasNextPage,
-    isFetchingMore: query.isFetchingNextPage,
-    loadMore: () => query.fetchNextPage(),
+    isPending: queryResult.isPending,
+    isError: queryResult.isError,
+    error: queryResult.error,
+    hasMore: queryResult.isNextPage,
+    isFetchingMore: queryResult.isFetchingNextPage,
+    loadMore: () => queryResult.fetchNextPage(),
   };
 }
