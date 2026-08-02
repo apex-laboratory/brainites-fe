@@ -11,7 +11,10 @@ import { cn } from "@/utils/cn";
 
 import type { Skill } from "../types";
 
-const COLUMNS = "grid-cols-[2.6fr_0.6fr_0.85fr_1fr_0.95fr_52px]";
+// Version, status and the action button hug fixed widths — they hold a badge or
+// an icon, never prose, and as `fr` tracks they stole width from the name column
+// and left the status badge floating mid-cell.
+const COLUMNS = "grid-cols-[2.6fr_72px_0.85fr_1fr_112px_36px]";
 const HEADERS = ["Skill", "Version", "Source lineage", "Calls · 30d", "Status", ""];
 
 export interface SkillsTableProps {
@@ -104,7 +107,9 @@ export function SkillsTable({
                     <span className="text-[13px] text-ink-4">—</span>
                   )}
                 </div>
-                <StatusBadge status={skill.status} />
+                {/* Grid items are blockified, so an unsized badge stretches to
+                    fill the whole status column instead of hugging its label. */}
+                <StatusBadge status={skill.status} className="w-fit" />
                 <button
                   type="button"
                   aria-label={`View ${skill.name} details and version history`}

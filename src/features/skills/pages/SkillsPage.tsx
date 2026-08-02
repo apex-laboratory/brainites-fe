@@ -92,13 +92,13 @@ export function SkillsPage() {
                   : ""}
               </TabsTrigger>
             </TabsList>
-            {tab === "registry" && (
-              <div className="relative">
-                <AppIcon
-                  name="search"
-                  size={16}
-                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-4"
-                />
+            <div className="relative">
+              <AppIcon
+                name="search"
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-4"
+              />
+              {tab === "registry" ? (
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -106,8 +106,16 @@ export function SkillsPage() {
                   aria-label="Search skills"
                   className="w-[200px] pl-9"
                 />
-              </div>
-            )}
+              ) : (
+                <Input
+                  value={drafts.query}
+                  onChange={(event) => drafts.setQuery(event.target.value)}
+                  placeholder="Search drafts…"
+                  aria-label="Search drafts"
+                  className="w-[200px] pl-9"
+                />
+              )}
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -181,7 +189,11 @@ export function SkillsPage() {
               <SkillsTable
                 skills={drafts.skills}
                 onInspect={(id) => setInspectingDraftId(id)}
-                emptyLabel="No drafts below the review floor right now."
+                emptyLabel={
+                  drafts.hasQuery
+                    ? "No drafts match your search on the pages loaded so far."
+                    : "No drafts below the review floor right now."
+                }
               />
               {drafts.hasMore && (
                 <div className="flex justify-center">

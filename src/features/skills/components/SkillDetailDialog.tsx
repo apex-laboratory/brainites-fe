@@ -114,108 +114,119 @@ export function SkillDetailDialog({
 
   return (
     <Dialog open={skillId !== null} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[85vh] max-w-[640px] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex flex-wrap items-center gap-2.5">
-            <span className="grid size-[30px] shrink-0 place-items-center rounded-lg bg-cream text-brand">
+      <DialogContent className="flex max-h-[85vh] max-w-[640px] flex-col gap-0 overflow-hidden p-0">
+        {/* `pr-14` keeps the wrapped title clear of the absolute close button. */}
+        <DialogHeader className="shrink-0 gap-3 space-y-0 border-b border-line bg-paper px-6 pb-4 pr-14 pt-5">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 grid size-[30px] shrink-0 place-items-center rounded-lg bg-cream text-brand">
               <AppIcon name="skills" size={16} />
             </span>
-            {skill?.name ?? skillName ?? "Skill"}
-            {skill && (
-              <>
-                <Badge variant="outline" className="tnum">
-                  {skill.version}
-                </Badge>
-                <StatusBadge status={asStatus(skill.status)} />
-              </>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            {skill?.updatedAt
-              ? `Updated ${formatRelativeTime(skill.updatedAt) ?? "recently"}.`
-              : "The executable logic your agents call, and how it got here."}
-          </DialogDescription>
+            <div className="flex min-w-0 flex-col gap-2">
+              <DialogTitle className="break-words text-[16px] leading-snug">
+                {skill?.name ?? skillName ?? "Skill"}
+              </DialogTitle>
+              <div className="flex flex-wrap items-center gap-2">
+                {skill && (
+                  <>
+                    <Badge variant="outline" className="tnum">
+                      {skill.version}
+                    </Badge>
+                    <StatusBadge status={asStatus(skill.status)} />
+                  </>
+                )}
+                <DialogDescription className="text-[12px] text-ink-4">
+                  {skill?.updatedAt
+                    ? `Updated ${formatRelativeTime(skill.updatedAt) ?? "recently"}.`
+                    : "The executable logic your agents call, and how it got here."}
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
         </DialogHeader>
 
-        {isError ? (
-          <ErrorState
-            error={error}
-            onRetry={refetch}
-            title="Couldn't load this skill"
-          />
-        ) : isPending || !skill ? (
-          <div className="flex flex-col gap-3">
-            <Skeleton className="h-20 rounded-xl" />
-            <Skeleton className="h-32 rounded-xl" />
-            <Skeleton className="h-24 rounded-xl" />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-5">
-            {skill.trigger && (
-              <Field label="Trigger">
-                <p className="text-[13.5px] leading-relaxed text-ink-2">
-                  {skill.trigger}
-                </p>
-              </Field>
-            )}
-
-            <Field label="Base logic">
-              <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink">
-                {skill.baseLogic || "—"}
-              </p>
-            </Field>
-
-            {skill.exceptionsBlock.length > 0 && (
-              <Field label={`Exceptions · ${skill.exceptionsBlock.length}`}>
-                <RawBlock items={skill.exceptionsBlock} />
-              </Field>
-            )}
-
-            {skill.actions.length > 0 && (
-              <Field label={`Actions · ${skill.actions.length}`}>
-                <RawBlock items={skill.actions} />
-              </Field>
-            )}
-
-            <div className="flex flex-wrap items-center gap-4">
-              {authority && (
-                <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
-                  <SourceIcon id={authority} size={16} branded />
-                  Source of authority
-                </span>
-              )}
-              {skill.confidence != null && (
-                <span className="tnum text-[12.5px] text-ink-3">
-                  {Math.round(skill.confidence * 100)}% confidence
-                </span>
-              )}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5">
+          {isError ? (
+            <ErrorState
+              error={error}
+              onRetry={refetch}
+              title="Couldn't load this skill"
+            />
+          ) : isPending || !skill ? (
+            <div className="flex flex-col gap-3">
+              <Skeleton className="h-20 rounded-xl" />
+              <Skeleton className="h-32 rounded-xl" />
+              <Skeleton className="h-24 rounded-xl" />
             </div>
-
-            <Field label="Version history">
-              {versionsFailed ? (
-                <p className="text-[13px] text-ink-4">
-                  Couldn't load the version history.
-                </p>
-              ) : isLoadingVersions ? (
-                <Skeleton className="h-16 rounded-xl" />
-              ) : versions.length === 0 ? (
-                <p className="text-[13px] text-ink-4">
-                  No earlier versions — this is the first published revision.
-                </p>
-              ) : (
-                <ol className="mt-1 flex flex-col">
-                  {versions.map((version, i) => (
-                    <VersionRow
-                      key={version.version}
-                      version={version}
-                      isCurrent={i === 0}
-                    />
-                  ))}
-                </ol>
+          ) : (
+            <div className="flex flex-col gap-5">
+              {skill.trigger && (
+                <Field label="Trigger">
+                  <p className="text-[13.5px] leading-relaxed text-ink-2">
+                    {skill.trigger}
+                  </p>
+                </Field>
               )}
-            </Field>
-          </div>
-        )}
+
+              <Field label="Base logic">
+                <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink">
+                  {skill.baseLogic || "—"}
+                </p>
+              </Field>
+
+              {skill.exceptionsBlock.length > 0 && (
+                <Field label={`Exceptions · ${skill.exceptionsBlock.length}`}>
+                  <RawBlock items={skill.exceptionsBlock} />
+                </Field>
+              )}
+
+              {skill.actions.length > 0 && (
+                <Field label={`Actions · ${skill.actions.length}`}>
+                  <RawBlock items={skill.actions} />
+                </Field>
+              )}
+
+              {(authority || skill.confidence != null) && (
+                <div className="flex flex-wrap items-center gap-4 border-t border-line-soft pt-4">
+                  {authority && (
+                    <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
+                      <SourceIcon id={authority} size={16} branded />
+                      Source of authority
+                    </span>
+                  )}
+                  {skill.confidence != null && (
+                    <span className="tnum text-[12.5px] text-ink-3">
+                      {Math.round(skill.confidence * 100)}% confidence
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <Field label="Version history">
+                {versionsFailed ? (
+                  <p className="text-[13px] text-ink-4">
+                    Couldn't load the version history.
+                  </p>
+                ) : isLoadingVersions ? (
+                  <Skeleton className="h-16 rounded-xl" />
+                ) : versions.length === 0 ? (
+                  <p className="text-[13px] text-ink-4">
+                    No earlier versions — this is the first published revision.
+                  </p>
+                ) : (
+                  <ol className="mt-1 flex flex-col">
+                    {versions.map((version, i) => (
+                      <VersionRow
+                        key={version.version}
+                        version={version}
+                        isCurrent={i === 0}
+                      />
+                    ))}
+                  </ol>
+                )}
+              </Field>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

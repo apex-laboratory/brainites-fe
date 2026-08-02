@@ -24,7 +24,7 @@ import type { SkillListItem } from "../api";
  */
 function RawBlock({ items }: { items: unknown[] }) {
   return (
-    <pre className="max-h-52 overflow-auto rounded-[10px] bg-cream px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-ink-2">
+    <pre className="max-h-52 overflow-auto rounded-[10px] border border-line-soft bg-cream px-3.5 py-2.5 font-mono text-[12px] leading-relaxed text-ink-2">
       {JSON.stringify(items, null, 2)}
     </pre>
   );
@@ -32,7 +32,7 @@ function RawBlock({ items }: { items: unknown[] }) {
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <SectionLabel className="pb-0">{label}</SectionLabel>
       {children}
     </div>
@@ -53,67 +53,89 @@ export interface DraftDetailDialogProps {
  * Read-only draft inspector. Skills below the review-queue confidence floor
  * never get a `reviews` row, so unlike a published skill there's no version
  * history and no live endpoint to poll — this just renders the list row.
+ *
+ * Laid out as a fixed header over a scrolling body: draft names run long, and
+ * a wrapping title in the scroll flow used to run under the close button.
  */
 export function DraftDetailDialog({ item, onClose }: DraftDetailDialogProps) {
   const authority = asSourceId(item?.sourceAuthority);
+  const captured = item?.updatedAt ? formatRelativeTime(item.updatedAt) : null;
 
   return (
     <Dialog open={item !== null} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-h-[85vh] max-w-[640px] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex flex-wrap items-center gap-2.5">
-            <span className="grid size-[30px] shrink-0 place-items-center rounded-lg bg-cream text-brand">
+      <DialogContent className="flex max-h-[85vh] max-w-[620px] flex-col gap-0 overflow-hidden p-0">
+        {/* `pr-14` keeps the wrapped title clear of the absolute close button. */}
+        <DialogHeader className="shrink-0 gap-3 space-y-0 border-b border-line bg-paper px-6 pb-4 pr-14 pt-5">
+          <div className="flex items-start gap-3">
+            <span className="mt-0.5 grid size-[30px] shrink-0 place-items-center rounded-lg bg-cream text-brand">
               <AppIcon name="skills" size={16} />
             </span>
-            {item?.name ?? "Skill"}
-            {item && (
-              <>
-                <Badge variant="outline" className="tnum">
-                  {item.version}
-                </Badge>
-                <StatusBadge status={asStatus(item.status)} />
-              </>
-            )}
-          </DialogTitle>
-          <DialogDescription>
-            Below the review-queue confidence floor — extracted, but not queued
-            for approval.
-            {item?.updatedAt
-              ? ` Captured ${formatRelativeTime(item.updatedAt) ?? "recently"}.`
-              : ""}
-          </DialogDescription>
+            <div className="flex min-w-0 flex-col gap-2">
+              <DialogTitle className="break-words text-[16px] leading-snug">
+                {item?.name ?? "Skill"}
+              </DialogTitle>
+              {item && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className="tnum">
+                    {item.version}
+                  </Badge>
+                  <StatusBadge status={asStatus(item.status)} />
+                  {captured && (
+                    <span className="flex items-center gap-1 text-[12px] text-ink-4">
+                      <AppIcon name="clock" size={13} />
+                      Captured {captured}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
-        {item && (
-          <div className="flex flex-col gap-5">
-            <Field label="Base logic">
-              <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink">
-                {item.baseLogic || "—"}
-              </p>
-            </Field>
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5">
+          <DialogDescription className="flex items-start gap-2.5 rounded-[10px] border border-line-soft bg-cream px-3.5 py-3 text-[12.5px] leading-relaxed text-ink-3">
+            <AppIcon
+              name="warning"
+              size={14}
+              className="mt-[3px] shrink-0 text-amber"
+            />
+            <span>
+              Below the review-queue confidence floor — extracted, but not
+              queued for approval. Read-only.
+            </span>
+          </DialogDescription>
 
-            {item.exceptionsBlock.length > 0 && (
-              <Field label={`Exceptions · ${item.exceptionsBlock.length}`}>
-                <RawBlock items={item.exceptionsBlock} />
-              </Field>
-            )}
-
-            {item.description && (
-              <Field label="Notes">
-                <p className="text-[13.5px] leading-relaxed text-ink-2">
-                  {item.description}
+          {item && (
+            <div className="mt-5 flex flex-col gap-5">
+              <Field label="Base logic">
+                <p className="whitespace-pre-line text-[13.5px] leading-relaxed text-ink">
+                  {item.baseLogic || "—"}
                 </p>
               </Field>
-            )}
 
-            {authority && (
-              <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
-                <SourceIcon id={authority} size={16} branded />
-                Source of authority
-              </span>
-            )}
-          </div>
-        )}
+              {item.exceptionsBlock.length > 0 && (
+                <Field label={`Exceptions · ${item.exceptionsBlock.length}`}>
+                  <RawBlock items={item.exceptionsBlock} />
+                </Field>
+              )}
+
+              {item.description && (
+                <Field label="Notes">
+                  <p className="text-[13.5px] leading-relaxed text-ink-2">
+                    {item.description}
+                  </p>
+                </Field>
+              )}
+
+              {authority && (
+                <div className="flex items-center gap-1.5 border-t border-line-soft pt-4 text-[12.5px] text-ink-3">
+                  <SourceIcon id={authority} size={16} branded />
+                  Source of authority
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
