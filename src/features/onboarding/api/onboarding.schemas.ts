@@ -99,14 +99,6 @@ export const SweepSchema = z.object({
 });
 export type Sweep = z.infer<typeof SweepSchema>;
 
-/**
- * `GET /sweeps/active` → the in-flight sweep for this workspace, or `null` when
- * none is running. The whole point of the endpoint is that the client never has
- * to persist a sweep id: a reload re-discovers it here.
- */
-export const ActiveSweepSchema = SweepSchema.nullable();
-export type ActiveSweep = z.infer<typeof ActiveSweepSchema>;
-
 /** Sweep-level terminal states. Anything else means "keep polling". */
 const TERMINAL_SWEEP_STATES = new Set(["completed", "failed"]);
 export function isSweepTerminal(sweep: Sweep): boolean {

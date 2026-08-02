@@ -13,7 +13,6 @@ import {
   type Sweep,
   type SweepProviderProgress,
 } from "../api";
-import { useActiveSweep } from "./useActiveSweep";
 
 /** Poll cadence. The backend has no rate limit here; 2.5s stays inside the
  * brief's 2–3s window and well clear of the "never faster than 1/s" floor. */
@@ -33,7 +32,6 @@ const SETTLE_POLLS = 3;
  * client-side give-up.
  */
 export type SweepPhase =
-  | "checking"
   | "idle"
   | "starting"
   | "ingesting"
@@ -54,16 +52,14 @@ export interface OnboardingSweepState {
   start: () => void;
   /** Re-attempt after a failed start. */
   retry: () => void;
-  /** True when the build was picked up from `/sweeps/active`, not started here. */
-  resumed: boolean;
   /** The start failure, for inline rendering. */
   error: unknown;
 }
 
 /**
- * Owns the onboarding sweep end to end: resume, start, poll, settle, give up.
+ * Owns the onboarding sweep end to end: start, poll, settle, give up.
  *
- * Four behaviours here exist because the obvious implementation gets them
+ * Three behaviours here exist because the obvious implementation gets them
  * wrong:
  *
  *  1. **Nothing auto-starts.** `POST /sweeps` fires only from `start()`, so the
@@ -76,30 +72,23 @@ export interface OnboardingSweepState {
  *     the data object when a response is deeply equal, so counting "unchanged"
  *     off the sweep object alone would never advance. The check is keyed on
  *     `dataUpdatedAt`, which moves on every completed poll.
- *  4. **A failed `/sweeps/active` is not fatal.** If that endpoint is missing or
- *     erroring we fall through to the normal start flow rather than blocking
- *     onboarding — except for a 403, which is a real answer about the user.
+ *
+ * There is deliberately no resume-across-reloads: the backend exposes no way to
+ * look up the workspace's in-flight sweep, and the sweep id is never persisted
+ * client-side. A refresh mid-build lands back on the CTA — `POST /sweeps` is
+ * idempotent, so pressing it returns the running sweep rather than starting a
+ * second one.
  */
 export function useOnboardingSweep(): OnboardingSweepState {
   const { workspaceId } = useAuth();
-  const active = useActiveSweep();
 
   const [sweepId, setSweepId] = useState<string | null>(null);
-  const [resumed, setResumed] = useState(false);
   const [settled, setSettled] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
 
   const pollStartedAt = useRef<number | null>(null);
   const lastCounts = useRef<string | null>(null);
   const stableTicks = useRef(0);
-
-  // ── resume an in-flight sweep ─────────────────────────────────────────────
-  useEffect(() => {
-    if (!active.sweep || sweepId) return;
-    setSweepId(active.sweep.id);
-    setResumed(true);
-    pollStartedAt.current = Date.now();
-  }, [active.sweep, sweepId]);
 
   // ── start ─────────────────────────────────────────────────────────────────
   const startMutation = useMutation({
@@ -137,7 +126,7 @@ export function useOnboardingSweep(): OnboardingSweepState {
     retry: false,
   });
 
-  const sweep = poll.data ?? startMutation.data ?? active.sweep ?? undefined;
+  const sweep = poll.data ?? startMutation.data ?? undefined;
 
   // ── settle: keep polling until the extraction counts stop moving ──────────
   const pollUpdatedAt = poll.dataUpdatedAt;
@@ -181,8 +170,7 @@ export function useOnboardingSweep(): OnboardingSweepState {
   // ── phase ─────────────────────────────────────────────────────────────────
   const forbidden =
     (isApiError(startMutation.error) && startMutation.error.status === 403) ||
-    (isApiError(poll.error) && poll.error.status === 403) ||
-    (isApiError(active.error) && active.error.status === 403);
+    (isApiError(poll.error) && poll.error.status === 403);
 
   // A poll that has never once succeeded means the id we're holding is unusable
   // (a 404 from a bad or foreign sweep id). Say so now rather than spinning for
@@ -193,23 +181,21 @@ export function useOnboardingSweep(): OnboardingSweepState {
 
   const phase: SweepPhase = forbidden
     ? "forbidden"
-    : active.isPending
-      ? "checking"
-      : timedOut
-        ? "timedOut"
-        : settled
-          ? "done"
-          : pollDead
-            ? "error"
-            : sweep
-              ? isSweepTerminal(sweep)
-                ? "extracting"
-                : "ingesting"
-              : startMutation.isPending
-                ? "starting"
-                : startMutation.isError
-                  ? "error"
-                  : "idle";
+    : timedOut
+      ? "timedOut"
+      : settled
+        ? "done"
+        : pollDead
+          ? "error"
+          : sweep
+            ? isSweepTerminal(sweep)
+              ? "extracting"
+              : "ingesting"
+            : startMutation.isPending
+              ? "starting"
+              : startMutation.isError
+                ? "error"
+                : "idle";
 
   const providers = useMemo(
     () => (sweep ? sweepProviders(sweep) : []),
@@ -224,7 +210,6 @@ export function useOnboardingSweep(): OnboardingSweepState {
     failures,
     start,
     retry,
-    resumed,
     error: startMutation.error ?? (pollDead ? poll.error : null),
   };
 }

@@ -1,12 +1,19 @@
 import { useCallback, useRef, useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { useAuth, useWorkspaceId } from "@/app/providers/AuthProvider";
 import { BRAND } from "@/constants/brand";
 import { asSourceId } from "@/constants/sources";
 import { isApiError } from "@/lib/api";
 
-import { brainApi, brainKeys, type BrainQueryResponse, type SourceCitation } from "../api";
+import {
+  brainApi,
+  brainKeys,
+  type BrainQueryResponse,
+  type Conversation,
+  type ConversationMessage,
+  type SourceCitation,
+} from "../api";
 import { CHAT_SUGGESTIONS } from "../data/brain-answers";
 import type { AnswerSource, ChatMessage } from "../types";
 
@@ -43,6 +50,26 @@ function mapAnswer(res: BrainQueryResponse): ChatMessage {
   };
 }
 
+/**
+ * A replayed turn, narrowed to the same `ChatMessage` a live answer produces so
+ * a restored thread renders through exactly one bubble component. The backend's
+ * role vocabulary is `user` / `assistant`; anything that isn't `user` is treated
+ * as the brain speaking.
+ */
+function mapStoredMessage(m: ConversationMessage): ChatMessage {
+  const text = m.content ?? "";
+  if (m.role === "user") return { role: "you", text };
+  return {
+    role: "brain",
+    text,
+    sources: m.sources.map(mapCitation),
+    conf: m.confidence ?? null,
+    trust: m.trust ?? undefined,
+    provenance: m.provenance ?? null,
+    interactionId: m.interactionId ?? undefined,
+  };
+}
+
 export type BrainChatState = {
   messages: ChatMessage[];
   typing: boolean;
@@ -57,6 +84,20 @@ export type BrainChatState = {
   ready: boolean;
   /** Human-readable reason the composer is disabled, or null when ready. */
   notReadyReason: string | null;
+
+  // ── History ───────────────────────────────────────────────────────────────
+  /** Past threads for the history sidebar, newest-active first. */
+  conversations: Conversation[];
+  /** True on the first load of the thread list. */
+  conversationsLoading: boolean;
+  /** The thread on screen, or `null` for an unsaved new one. */
+  activeConversationId: string | null;
+  /** The thread currently being replayed, or `null`. */
+  loadingConversationId: string | null;
+  /** Replace the transcript with a stored thread. */
+  openConversation: (conversationId: string) => void;
+  /** Reset to the greeting and detach from any stored thread. */
+  startNewConversation: () => void;
 };
 
 const REASON_COPY: Record<string, string> = {
@@ -66,17 +107,23 @@ const REASON_COPY: Record<string, string> = {
 };
 
 /**
- * Owns the brain chat conversation against `POST /brain/query`.
+ * Owns the brain chat conversation against `POST /brain/query`, plus the thread
+ * history behind `GET /brain/conversations` and
+ * `GET /brain/conversations/{id}/messages`.
  *
  * Retrieval **and** synthesis happen server-side, so a reply takes seconds; the
  * typing indicator is driven by the real request rather than a timer. The
  * backend owns conversation persistence — it returns a `conversationId` on the
  * first answer, which every later question threads through so the server can
- * keep the history in `brain_conversations` / `brain_messages`.
+ * keep the history in `brain_conversations` / `brain_messages`. That id lives in
+ * a ref for the *request* and is mirrored into state only for *rendering*, so
+ * threading the next question never changes `send`'s identity (the dashboard's
+ * global keydown listener depends on it staying stable).
  */
 export function useBrainChat(): BrainChatState {
   const { user, workspace } = useAuth();
   const workspaceId = useWorkspaceId();
+  const queryClient = useQueryClient();
   const firstName = user?.name?.trim().split(" ")[0] ?? "";
   const workspaceName = workspace?.name ?? BRAND.workspace;
 
@@ -85,8 +132,15 @@ export function useBrainChat(): BrainChatState {
     greeting(firstName, workspaceName),
   ]);
 
-  // Held in a ref, not state: threading the next request must not re-render.
+  // The ref is what the next request threads through; the state is what the
+  // sidebar highlights. Always move them together via `setConversation`.
   const conversationId = useRef<string | undefined>(undefined);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+
+  const setConversation = useCallback((id: string | null) => {
+    conversationId.current = id ?? undefined;
+    setActiveConversationId(id);
+  }, []);
 
   const statusQuery = useQuery({
     queryKey: brainKeys.status(workspaceId),
@@ -94,12 +148,35 @@ export function useBrainChat(): BrainChatState {
     staleTime: 60 * 1000,
   });
 
+  /**
+   * The history sidebar. A failure here isn't worth an error surface: the route
+   * is dashboard-JWT-only and 403s an agent key, and history is an accessory to
+   * a chat that works perfectly well without it. It renders as an empty list
+   * and isn't retried.
+   */
+  const conversationsQuery = useQuery({
+    queryKey: brainKeys.conversations(workspaceId),
+    queryFn: () => brainApi.conversations(),
+    staleTime: 30 * 1000,
+    retry: false,
+  });
+
   const ask = useMutation({
     mutationFn: (question: string) =>
       brainApi.query({ question, conversationId: conversationId.current }),
     onSuccess: (res) => {
-      if (res.conversationId) conversationId.current = res.conversationId;
       setMessages((current) => [...current, mapAnswer(res)]);
+      if (!res.conversationId) return;
+      setConversation(res.conversationId);
+      // The first answer creates the thread server-side and every later one
+      // moves it up a list ordered by activity — refresh the sidebar either way.
+      void queryClient.invalidateQueries({
+        queryKey: brainKeys.conversations(workspaceId),
+      });
+      // The stored replay of this thread is now a turn behind.
+      void queryClient.invalidateQueries({
+        queryKey: brainKeys.messages(workspaceId, res.conversationId),
+      });
     },
     onError: (error) => {
       setMessages((current) => [
@@ -119,6 +196,30 @@ export function useBrainChat(): BrainChatState {
     meta: { errorToast: false },
   });
 
+  /**
+   * Replaying a thread is imperative (a click), not derived state — a `useQuery`
+   * keyed on the active id would refetch in the background and stomp the live
+   * transcript the user is mid-conversation in. Results still land in the query
+   * cache, so reopening a thread is instant.
+   */
+  const openThread = useMutation({
+    mutationFn: (id: string) =>
+      queryClient.fetchQuery({
+        queryKey: brainKeys.messages(workspaceId, id),
+        queryFn: () => brainApi.messages(id),
+        staleTime: 30 * 1000,
+      }),
+    onSuccess: (turns, id) => {
+      setConversation(id);
+      // An empty thread shouldn't render as a blank page — fall back to the
+      // greeting so the composer still has something above it.
+      setMessages(
+        turns.length ? turns.map(mapStoredMessage) : [greeting(firstName, workspaceName)],
+      );
+    },
+    meta: { errorMessage: "Couldn't open that conversation." },
+  });
+
   const typing = ask.isPending;
 
   // Treat an unresolved status as ready: a slow gate shouldn't block the composer,
@@ -134,6 +235,7 @@ export function useBrainChat(): BrainChatState {
   // the former made `send` — and every consumer memo downstream of it — churn on
   // every render.
   const { mutate: askBrain } = ask;
+  const { mutate: loadThread } = openThread;
 
   const send = useCallback(
     (text: string) => {
@@ -145,6 +247,22 @@ export function useBrainChat(): BrainChatState {
     [askBrain, typing, ready],
   );
 
+  const openConversation = useCallback(
+    (id: string) => {
+      // Re-opening the thread already on screen would only replace it with an
+      // identical replay; switching mid-answer would orphan the reply in flight.
+      if (id === conversationId.current || typing) return;
+      loadThread(id);
+    },
+    [loadThread, typing],
+  );
+
+  const startNewConversation = useCallback(() => {
+    if (typing) return;
+    setConversation(null);
+    setMessages([greeting(firstName, workspaceName)]);
+  }, [typing, setConversation, firstName, workspaceName]);
+
   return {
     messages,
     typing,
@@ -154,5 +272,11 @@ export function useBrainChat(): BrainChatState {
     showSuggestions: messages.length === 1 && !typing,
     ready,
     notReadyReason,
+    conversations: conversationsQuery.data ?? [],
+    conversationsLoading: conversationsQuery.isPending,
+    activeConversationId,
+    loadingConversationId: openThread.isPending ? (openThread.variables ?? null) : null,
+    openConversation,
+    startNewConversation,
   };
 }

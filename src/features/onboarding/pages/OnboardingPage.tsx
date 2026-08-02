@@ -4,7 +4,6 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/app/providers/AuthProvider";
 import { useConnectionLanding } from "@/features/sources/hooks";
 import {
-  useActiveSweep,
   useCreateWorkspace,
   useOnboardingFlow,
   useOnboardingProgress,
@@ -49,19 +48,6 @@ export function OnboardingPage() {
     returnedFromConnect.current = false;
     goTo("connect");
   }, [goTo]);
-
-  // Resume an in-flight sweep. `GET /sweeps/active` is read on every load, so a
-  // refresh (or a closed tab) during the build lands straight back on "Building
-  // your brain…" instead of restarting the wizard — and no sweep id is ever
-  // persisted client-side. Fires once: after that the user owns navigation.
-  const { sweep: activeSweep } = useActiveSweep();
-  const resumed = useRef(false);
-
-  useEffect(() => {
-    if (resumed.current || !activeSweep) return;
-    resumed.current = true;
-    goTo("learning");
-  }, [activeSweep, goTo]);
 
   // Company → create the workspace (once), then advance. If a workspace already
   // exists (e.g. the user stepped back then forward), just re-record and move on.

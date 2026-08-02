@@ -42,7 +42,7 @@ export interface StepLearningProps {
 export function StepLearning({ onComplete }: StepLearningProps) {
   const { role } = useAuth();
   const { sources, isPending: sourcesPending } = useSources();
-  const { phase, sweep, providers, failures, start, retry, resumed, error } =
+  const { phase, sweep, providers, failures, start, retry, error } =
     useOnboardingSweep();
 
   // Hide the CTA only when we positively know the user isn't an admin. Right
@@ -99,13 +99,6 @@ export function StepLearning({ onComplete }: StepLearningProps) {
                 sub="Starting the onboarding sweep is restricted to workspace admins. Ask an admin to run it, then come back."
               >
                 <Continue onClick={onComplete} label="Continue" />
-              </Frame>
-            ) : phase === "checking" ? (
-              <Frame
-                title="Building your brain"
-                sub="Checking whether a build is already running…"
-              >
-                <Spinner size={20} tone="light" />
               </Frame>
             ) : phase === "error" ? (
               <Frame
@@ -176,11 +169,7 @@ export function StepLearning({ onComplete }: StepLearningProps) {
             ) : (
               <Frame
                 title="Building your brain"
-                sub={
-                  resumed
-                    ? "Picking up the build that was already running."
-                    : "Brainite is reading your connected tools and extracting decisions."
-                }
+                sub="Brainite is reading your connected tools and extracting decisions."
               >
                 {providers.length > 0 ? (
                   <SweepProgressList entries={providers} />

@@ -1,15 +1,17 @@
-export { ChatMessage } from "./components";
+export { ChatMessage, ConversationList } from "./components";
 export { BrainChatPage } from "./pages/BrainChatPage";
 export { useBrainChat, type BrainChatState } from "./hooks/useBrainChat";
 export {
   BrainChatProvider,
   useBrainChatContext,
 } from "./context/BrainChatContext";
-export { brainApi, brainKeys } from "./api";
+export { brainApi, brainKeys, conversationTimestamp } from "./api";
 export type {
   BrainProvenance,
   BrainQueryResponse,
   BrainStatus,
+  Conversation,
+  ConversationMessage,
   SourceCitation,
   Trust,
 } from "./api";

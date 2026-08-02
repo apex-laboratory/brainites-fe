@@ -2,13 +2,11 @@ import { api } from "@/lib/api";
 
 import type { CompanyForm } from "../types";
 import {
-  ActiveSweepSchema,
   CreateWorkspaceResultSchema,
   OnboardingResultSchema,
   SweepSchema,
   toTeamSize,
   toUseCase,
-  type ActiveSweep,
   type CreateWorkspaceResult,
   type OnboardingResult,
   type OnboardingStepValue,
@@ -85,15 +83,10 @@ export const onboardingApi = {
 
   getSweep: (sweepId: string): Promise<Sweep> =>
     api.get(`/sweeps/${sweepId}`, SweepSchema),
-
-  /** The in-flight sweep for this workspace, or `null`. Lets a reload resume. */
-  activeSweep: (): Promise<ActiveSweep> =>
-    api.get("/sweeps/active", ActiveSweepSchema),
 };
 
 /** Query keys for onboarding-owned server state (the sweep poll). */
 export const onboardingKeys = {
   sweep: (workspaceId: string, sweepId: string) =>
     ["sweep", workspaceId, sweepId] as const,
-  activeSweep: (workspaceId: string) => ["sweep", workspaceId, "active"] as const,
 };

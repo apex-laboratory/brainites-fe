@@ -2,10 +2,17 @@ import { useEffect, useRef, useState } from "react";
 
 import { AppIcon, StatusIndicator } from "@/components/shared";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { SOURCE_ORDER } from "@/constants/sources";
 
 import { ChatMessage } from "../components/ChatMessage";
+import { ConversationList } from "../components/ConversationList";
 import { useBrainChatContext } from "../context/BrainChatContext";
 
 /** Typing indicator (three bouncing dots) shown while the brain replies. */
@@ -30,9 +37,13 @@ function TypingIndicator() {
 
 /**
  * Full-page brain chat (replaces the old floating FAB + panel). A dedicated
- * dashboard tab styled like a modern assistant chat: a scrolling transcript
- * with a sticky composer pinned to the bottom. The conversation is shared via
- * `BrainChatContext`, so history survives navigating away and back.
+ * dashboard tab styled like a modern assistant chat: a history rail, a
+ * scrolling transcript, and a sticky composer pinned to the bottom. The
+ * in-progress conversation is shared via `BrainChatContext`, so it survives
+ * navigating away and back; past threads come from the server.
+ *
+ * The rail is a permanent column from `lg` up and a sheet below it — a
+ * 248px column on a phone would leave the transcript unreadable.
  */
 export function BrainChatPage() {
   const {
@@ -44,9 +55,26 @@ export function BrainChatPage() {
     showSuggestions,
     ready,
     notReadyReason,
+    conversations,
+    conversationsLoading,
+    activeConversationId,
+    loadingConversationId,
+    openConversation,
+    startNewConversation,
   } = useBrainChatContext();
   const [draft, setDraft] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const historyProps = {
+    conversations,
+    loading: conversationsLoading,
+    activeId: activeConversationId,
+    loadingId: loadingConversationId,
+    onSelect: openConversation,
+    onNew: startNewConversation,
+    busy: typing,
+  };
 
   // autoscroll to the latest message (genuine DOM side effect)
   useEffect(() => {
@@ -62,9 +90,39 @@ export function BrainChatPage() {
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0">
+      <ConversationList
+        {...historyProps}
+        className="hidden w-[252px] shrink-0 border-r border-line lg:flex"
+      />
+
+      {/* history, below `lg` */}
+      <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+        <SheetContent side="left" className="w-[288px] p-0 lg:hidden">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Chat history</SheetTitle>
+          </SheetHeader>
+          <ConversationList
+            {...historyProps}
+            onNavigate={() => setHistoryOpen(false)}
+            className="h-full pt-8"
+          />
+        </SheetContent>
+      </Sheet>
+
+      <div className="flex h-full min-w-0 flex-1 flex-col">
       {/* header */}
       <div className="flex items-center gap-2.5 border-b border-line bg-paper/80 px-6 py-3.5 backdrop-blur md:px-10">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => setHistoryOpen(true)}
+          aria-label="Open chat history"
+          className="-ml-1 size-9 shrink-0 lg:hidden"
+        >
+          <AppIcon name="clock" size={18} />
+        </Button>
         <span className="grid size-[34px] shrink-0 place-items-center rounded-[10px] border border-line bg-cream text-ink">
           <AppIcon name="brain" size={19} />
         </span>
@@ -78,6 +136,17 @@ export function BrainChatPage() {
             pulse
           />
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={startNewConversation}
+          disabled={typing}
+          className="hidden shrink-0 gap-1.5 lg:inline-flex"
+        >
+          <AppIcon name="plus" size={14} />
+          New chat
+        </Button>
       </div>
 
       {/* transcript */}
@@ -156,6 +225,7 @@ export function BrainChatPage() {
             )}
           </p>
         </div>
+      </div>
       </div>
     </div>
   );
