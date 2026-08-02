@@ -6,6 +6,7 @@ import {
   StatusBadge,
 } from "@/components/shared";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn";
 
@@ -13,8 +14,10 @@ import type { Skill } from "../types";
 
 // Version, status and the action button hug fixed widths — they hold a badge or
 // an icon, never prose, and as `fr` tracks they stole width from the name column
-// and left the status badge floating mid-cell.
+// and left the status badge floating mid-cell. The actions column widens when
+// the "Submit" button shares it with the inspect icon.
 const COLUMNS = "grid-cols-[2.6fr_72px_0.85fr_1fr_112px_36px]";
+const COLUMNS_WITH_SUBMIT = "grid-cols-[2.6fr_72px_0.85fr_1fr_112px_160px]";
 const HEADERS = ["Skill", "Version", "Source lineage", "Calls · 30d", "Status", ""];
 
 export interface SkillsTableProps {
@@ -23,6 +26,14 @@ export interface SkillsTableProps {
   emptyLabel?: string;
   /** Open a row's full body + version history. */
   onInspect: (skillId: string, skillName: string) => void;
+  /**
+   * Queue a draft for review (`POST /skills/{id}/submit`). Omit to hide the
+   * action entirely — it's admin-only, and only a `draft` row can be submitted,
+   * so the button is never rendered on any other status.
+   */
+  onSubmit?: (skillId: string, skillName: string) => void;
+  /** Id of the row whose submit is in flight; disables just that button. */
+  submittingId?: string | null;
 }
 
 /** Dense skills registry table built on a CSS grid (prototype `SkillsPage`). */
@@ -30,15 +41,22 @@ export function SkillsTable({
   skills,
   emptyLabel = "No skills to show yet.",
   onInspect,
+  onSubmit,
+  submittingId,
 }: SkillsTableProps) {
+  const columns = onSubmit ? COLUMNS_WITH_SUBMIT : COLUMNS;
+
   return (
     <Card className="overflow-hidden">
       <div className="overflow-x-auto">
-        <div className="min-w-[720px]">
+        {/* The submit column adds ~124px of fixed width; without a matching
+            min-width bump the name column gets squeezed before the table
+            scrolls. */}
+        <div className={onSubmit ? "min-w-[840px]" : "min-w-[720px]"}>
           <div
             className={cn(
               "grid gap-3.5 border-b border-line bg-paper px-[22px] py-3",
-              COLUMNS
+              columns
             )}
           >
             {HEADERS.map((header, i) => (
@@ -53,12 +71,24 @@ export function SkillsTable({
               {emptyLabel}
             </div>
           ) : (
-            skills.map((skill, i) => (
+            skills.map((skill, i) => {
+              const skillId = skill.id;
+              const isSubmitting = Boolean(skillId && submittingId === skillId);
+              // Only a draft can be queued — the backend 409s on anything else,
+              // and the button has no meaning on a published row. The in-flight
+              // row is the exception: its status is already optimistically
+              // `review`, and dropping the button mid-submit would erase the
+              // only feedback the click produced.
+              const canSubmit = Boolean(
+                onSubmit && skillId && (skill.status === "draft" || isSubmitting),
+              );
+
+              return (
               <div
                 key={skill.id ?? skill.name}
                 className={cn(
                   "grid items-center gap-3.5 px-[22px] py-3.5 transition-colors hover:bg-paper",
-                  COLUMNS,
+                  columns,
                   i < skills.length - 1 && "border-b border-line-soft"
                 )}
               >
@@ -110,19 +140,33 @@ export function SkillsTable({
                 {/* Grid items are blockified, so an unsized badge stretches to
                     fill the whole status column instead of hugging its label. */}
                 <StatusBadge status={skill.status} className="w-fit" />
-                <button
-                  type="button"
-                  aria-label={`View ${skill.name} details and version history`}
-                  // A row without an id can't be looked up — the browse and
-                  // search schemas both carry one, so this only guards the type.
-                  disabled={!skill.id}
-                  onClick={() => skill.id && onInspect(skill.id, skill.name)}
-                  className="grid size-7 place-items-center justify-self-end rounded-md text-ink-3 transition-colors hover:bg-cream hover:text-ink disabled:opacity-40"
-                >
-                  <AppIcon name="diff" size={15} />
-                </button>
+                <div className="flex items-center justify-end gap-1.5">
+                  {canSubmit && skillId && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={isSubmitting}
+                      onClick={() => onSubmit?.(skillId, skill.name)}
+                      aria-label={`Submit ${skill.name} for review`}
+                    >
+                      {isSubmitting ? "Submitting…" : "Submit"}
+                    </Button>
+                  )}
+                  <button
+                    type="button"
+                    aria-label={`View ${skill.name} details and version history`}
+                    // A row without an id can't be looked up — the browse and
+                    // search schemas both carry one, so this only guards the type.
+                    disabled={!skillId}
+                    onClick={() => skillId && onInspect(skillId, skill.name)}
+                    className="grid size-7 shrink-0 place-items-center rounded-md text-ink-3 transition-colors hover:bg-cream hover:text-ink disabled:opacity-40"
+                  >
+                    <AppIcon name="diff" size={15} />
+                  </button>
+                </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import { useAuth } from "@/app/providers/AuthProvider";
 import {
   AppIcon,
   ErrorState,
@@ -21,6 +22,7 @@ import { useDraftSkills } from "../hooks/useDraftSkills";
 import { useExportSkills } from "../hooks/useExportSkills";
 import { useSkillsSearch } from "../hooks/useSkillsSearch";
 import { useSkillsStats } from "../hooks/useSkillsStats";
+import { useSubmitSkill } from "../hooks/useSubmitSkill";
 
 type RegistryTab = "registry" | "drafts";
 
@@ -31,10 +33,12 @@ type RegistryTab = "registry" | "drafts";
  *
  * A second "Drafts" tab covers skills the pipeline extracted below the
  * review-queue confidence floor — those never get a `reviews` row, so the
- * Review Queue screen can't show them either; this is their only home.
+ * Review Queue screen can't show them either; this is their only home. From
+ * there an admin can promote one into the queue (`POST /skills/{id}/submit`).
  */
 export function SkillsPage() {
   const [tab, setTab] = useState<RegistryTab>("registry");
+  const { role } = useAuth();
 
   const {
     query,
@@ -60,6 +64,17 @@ export function SkillsPage() {
   const [inspectingDraftId, setInspectingDraftId] = useState<string | null>(null);
   const inspectingDraft =
     drafts.rawItems.find((item) => item.id === inspectingDraftId) ?? null;
+
+  // Submitting a draft is admin-only. Hide the action only when we positively
+  // know the user isn't an admin — `role` is `null` until the first `/auth/me`
+  // resolves it, and gating on a strict `=== "admin"` would blank the button
+  // for the workspace owner on a cold load. A real non-admin still can't
+  // submit: the 403 surfaces as its own toast (mirrors `StepLearning`).
+  const knownNonAdmin = role !== null && role !== "admin";
+  const submitSkill = useSubmitSkill();
+  const submittingId = submitSkill.isPending
+    ? (submitSkill.variables?.skillId ?? null)
+    : null;
 
   const stats: Stat[] = statsQuery.data
     ? [
@@ -184,11 +199,20 @@ export function SkillsPage() {
             <>
               <p className="text-[13px] text-ink-4">
                 Extracted below the review-queue confidence floor — not yet
-                queued for approval. Read-only.
+                queued for approval.
+                {knownNonAdmin
+                  ? " Read-only; an admin can send one to the review queue."
+                  : " Submit one to put it in front of a reviewer."}
               </p>
               <SkillsTable
                 skills={drafts.skills}
                 onInspect={(id) => setInspectingDraftId(id)}
+                onSubmit={
+                  knownNonAdmin
+                    ? undefined
+                    : (id, name) => submitSkill.mutate({ skillId: id, name })
+                }
+                submittingId={submittingId}
                 emptyLabel={
                   drafts.hasQuery
                     ? "No drafts match your search on the pages loaded so far."
@@ -220,6 +244,23 @@ export function SkillsPage() {
       <DraftDetailDialog
         item={inspectingDraft}
         onClose={() => setInspectingDraftId(null)}
+        onSubmit={
+          knownNonAdmin || !inspectingDraft
+            ? undefined
+            : (note) =>
+                submitSkill.mutate(
+                  {
+                    skillId: inspectingDraft.id,
+                    name: inspectingDraft.name,
+                    note,
+                  },
+                  // Close on the optimistic write rather than waiting for the
+                  // refetch: the row is about to leave the drafts list, and a
+                  // dialog left open over a vanishing row reads as a hang.
+                  { onSuccess: () => setInspectingDraftId(null) },
+                )
+        }
+        isSubmitting={submittingId === inspectingDraft?.id}
       />
     </Tabs>
   );

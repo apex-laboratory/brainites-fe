@@ -111,3 +111,32 @@ export type CreateSkillBody = {
   baseLogic: string;
   description?: string;
 };
+
+/** Backend cap on a submit `note`; anything longer is rejected with a 422. */
+export const SUBMIT_NOTE_MAX_LENGTH = 2000;
+
+/**
+ * Body for `POST /skills/{id}/submit`. Optional — `note` is context *for the
+ * reviewer* and lands on the review's payload, not on the skill. The backend
+ * 422s on any unknown key, so nothing else may be sent.
+ */
+export type SubmitSkillBody = {
+  note?: string;
+};
+
+/**
+ * `POST /skills/{id}/submit` → the draft moved into the review queue
+ * (`status: "review"`) and a review card is open at `reviewId`.
+ *
+ * `reviewCreated: false` means the draft already had an open review — skills
+ * authored through `POST /skills` get one at creation — so the existing card was
+ * reused. `reviewId` still points at what the reviewer will see, and the call
+ * succeeded either way; `false` is never an error.
+ */
+export const SkillSubmitResultSchema = z.object({
+  skillId: z.string(),
+  status: z.string(),
+  reviewId: z.string(),
+  reviewCreated: z.boolean().default(true),
+});
+export type SkillSubmitResult = z.infer<typeof SkillSubmitResultSchema>;

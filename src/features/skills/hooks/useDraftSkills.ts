@@ -4,11 +4,9 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useWorkspaceId } from "@/app/providers/AuthProvider";
 import { useDebounce } from "@/hooks/useDebounce";
 
-import { skillKeys, skillsApi, type SkillListItem } from "../api";
+import { DRAFT_LIST_PARAMS, skillKeys, skillsApi, type SkillListItem } from "../api";
 import { mapListItem } from "../mappers";
 import type { Skill } from "../types";
-
-const DRAFTS_PAGE_SIZE = 50;
 
 /**
  * Browses `GET /skills?status=draft` — skills the pipeline extracted below the
@@ -31,12 +29,10 @@ export function useDraftSkills() {
   const debouncedQuery = useDebounce(query.trim().toLowerCase(), 200);
   const hasQuery = debouncedQuery.length > 0;
 
-  const params = { status: "draft", limit: DRAFTS_PAGE_SIZE };
-
   const queryResult = useInfiniteQuery({
-    queryKey: skillKeys.list(workspaceId, params),
+    queryKey: skillKeys.list(workspaceId, DRAFT_LIST_PARAMS),
     queryFn: ({ pageParam }) =>
-      skillsApi.list({ ...params, cursor: pageParam ?? undefined }),
+      skillsApi.list({ ...DRAFT_LIST_PARAMS, cursor: pageParam ?? undefined }),
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
   });
@@ -66,7 +62,7 @@ export function useDraftSkills() {
     isPending: queryResult.isPending,
     isError: queryResult.isError,
     error: queryResult.error,
-    hasMore: queryResult.isNextPage,
+    hasMore: queryResult.hasNextPage,
     isFetchingMore: queryResult.isFetchingNextPage,
     loadMore: () => queryResult.fetchNextPage(),
   };
