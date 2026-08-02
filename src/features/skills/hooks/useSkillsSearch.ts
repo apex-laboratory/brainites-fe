@@ -44,8 +44,12 @@ export function useSkillsSearch() {
 
   const skills = useMemo<Skill[]>(() => {
     if (hasQuery) return (searchQuery.data ?? []).map(mapSearchHit);
+    // The backend's list endpoint has no filter when `status` is omitted, so it
+    // returns drafts/in-review rows too — those live in the Review Queue, not
+    // here, and the detail dialog's endpoints 404 on anything but active/stable.
     return (browseQuery.data?.pages ?? [])
       .flatMap((page) => page.items)
+      .filter((item) => item.status === "active" || item.status === "stable")
       .map(mapListItem);
   }, [hasQuery, searchQuery.data, browseQuery.data]);
 
