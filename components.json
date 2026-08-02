@@ -10,6 +10,7 @@
     "cssVariables": true,
     "prefix": ""
   },
+  "iconLibrary": "react-icons",
   "aliases": {
     "components": "@/components",
     "utils": "@/utils/cn",
@@ -17,5 +18,7 @@
     "lib": "@/utils",
     "hooks": "@/hooks"
   },
-  "iconLibrary": "react-icons"
+  "registries": {
+    "@lucide-animated": "https://lucide-animated.com/r/{name}.json"
+  }
 }

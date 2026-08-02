@@ -125,7 +125,7 @@ export function ManageSourceDialog({ source, meta, trigger }: ManageSourceDialog
               disconnect.mutate(source.id, { onSuccess: () => close(false) });
             }}
           >
-            <AppIcon name="trash" size={14} />
+            <AppIcon name="disconnect" size={14} />
             {confirmingDisconnect ? "Confirm disconnect" : "Disconnect"}
           </Button>
 

@@ -1,6 +1,7 @@
 import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
-import { HiCheck, HiChevronRight } from "react-icons/hi2";
+import { CheckIcon } from "@/components/ui/check";
+import { ChevronRightIcon } from "@/components/ui/chevron-right";
 import { GoDotFill } from "react-icons/go";
 
 import { cn } from "@/utils/cn";
@@ -28,7 +29,7 @@ const DropdownMenuSubTrigger = React.forwardRef<
     {...props}
   >
     {children}
-    <HiChevronRight className="ml-auto size-4" />
+    <ChevronRightIcon size={16} className="ml-auto" />
   </DropdownMenuPrimitive.SubTrigger>
 ));
 DropdownMenuSubTrigger.displayName =
@@ -101,7 +102,7 @@ const DropdownMenuCheckboxItem = React.forwardRef<
   >
     <span className="absolute left-2 flex size-3.5 items-center justify-center">
       <DropdownMenuPrimitive.ItemIndicator>
-        <HiCheck className="size-4" />
+        <CheckIcon size={16} />
       </DropdownMenuPrimitive.ItemIndicator>
     </span>
     {children}

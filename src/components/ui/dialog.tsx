@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { HiXMark } from "react-icons/hi2";
+import { XIcon } from "@/components/ui/x";
 
 import { cn } from "@/utils/cn";
 
@@ -43,7 +43,7 @@ const DialogContent = React.forwardRef<
       {children}
       {!hideClose && (
         <DialogPrimitive.Close className="absolute right-4 top-4 rounded-md p-1 text-ink-3 opacity-70 transition-opacity hover:opacity-100 hover:bg-cream focus:outline-none focus:ring-2 focus:ring-ring disabled:pointer-events-none">
-          <HiXMark className="size-4" />
+          <XIcon size={16} />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>
       )}

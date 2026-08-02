@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Command as CommandPrimitive } from "cmdk";
-import { HiMagnifyingGlass } from "react-icons/hi2";
+import { SearchIcon } from "@/components/ui/search";
 
 import { cn } from "@/utils/cn";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -37,7 +37,7 @@ const CommandInput = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
   <div className="flex items-center border-b border-line px-3" cmdk-input-wrapper="">
-    <HiMagnifyingGlass className="mr-2 size-4 shrink-0 text-ink-3" />
+    <SearchIcon size={16} className="mr-2 shrink-0 text-ink-3" />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
