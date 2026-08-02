@@ -27,8 +27,8 @@ const DRAFTS_PAGE_SIZE = 50;
  */
 export function useDraftSkills() {
   const workspaceId = useWorkspaceId();
-  const [query, setQuery] = useState("");
-  const debouncedQuery = useDebounce(query.trim().toLowerCase(), 200);
+  const [searchQuery, setSearchQuery] = useState("");
+  const debouncedQuery = useDebounce(searchQuery.trim().toLowerCase(), 200);
   const hasQuery = debouncedQuery.length > 0;
 
   const params = { status: "draft", limit: DRAFTS_PAGE_SIZE };
