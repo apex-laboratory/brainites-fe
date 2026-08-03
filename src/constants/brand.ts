@@ -1,13 +1,14 @@
-/** Brainite product/brand constants. */
+/**
+ * Brainite product/brand constants.
+ *
+ * Product identity only — nothing tenant-specific belongs here. The active
+ * workspace's name, slug and brain endpoint are per-tenant and come from the
+ * session (`useAuth().workspace`) or the settings payload.
+ */
 export const BRAND = {
   onboardingName: "brainite",
   /** User-facing product name. */
   name: "Brainite",
-  /** The workspace represented in static data. */
-  workspace: "Riverline",
-  workspaceUrl: "riverline.io",
-  /** Brain endpoint shown in settings (static). */
-  brainEndpoint: "https://riverline.brainite.com/mcp",
   tagline: "Your company brain.",
 } as const;
 

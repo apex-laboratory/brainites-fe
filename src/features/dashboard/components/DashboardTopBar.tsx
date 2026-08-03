@@ -14,6 +14,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAuth } from "@/app/providers/AuthProvider";
 import { BRAND } from "@/constants/brand";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
@@ -39,6 +40,7 @@ export function DashboardTopBar({
   onOpenCommand,
 }: DashboardTopBarProps) {
   const navigate = useNavigate();
+  const { workspace } = useAuth();
   const hasNotifications = reviewCount > 0;
 
   return (
@@ -65,7 +67,7 @@ export function DashboardTopBar({
       </Tooltip>
 
       <nav aria-label="Breadcrumb" className="flex items-center gap-2.5 text-sm text-ink-3">
-        <span>{BRAND.workspace}</span>
+        <span>{workspace?.name ?? BRAND.name}</span>
         <AppIcon name="chevronRight" size={13} className="text-ink-4" />
         <span aria-current="page" className="font-semibold text-ink">
           {activeTitle}

@@ -21,4 +21,3 @@ export {
   PAGE_TITLE_BY_PATH,
   type NavItem,
 } from "./data/navigation";
-export { WORKSPACE } from "./data/workspace";

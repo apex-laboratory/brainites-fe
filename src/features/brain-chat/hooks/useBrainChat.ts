@@ -125,7 +125,9 @@ export function useBrainChat(): BrainChatState {
   const workspaceId = useWorkspaceId();
   const queryClient = useQueryClient();
   const firstName = user?.name?.trim().split(" ")[0] ?? "";
-  const workspaceName = workspace?.name ?? BRAND.workspace;
+  // Falls back to the product name, never another tenant's: this string is
+  // rendered as "<name> brain" in the header and greeting.
+  const workspaceName = workspace?.name ?? BRAND.name;
 
   // Lazy initializer: the greeting is seeded once from the session identity.
   const [messages, setMessages] = useState<ChatMessage[]>(() => [

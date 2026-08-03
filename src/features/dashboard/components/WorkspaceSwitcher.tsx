@@ -14,12 +14,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { BRAND } from "@/constants/brand";
 import { ROUTES } from "@/constants/routes";
 import { useMembers } from "@/features/settings";
 import { cn } from "@/utils/cn";
 
 import { useOverview } from "../hooks/useOverview";
-import { WORKSPACE } from "../data/workspace";
 
 /**
  * The `slug · N members` line. Lives in its own component because radix
@@ -28,11 +28,14 @@ import { WORKSPACE } from "../data/workspace";
  */
 function WorkspaceMeta({ url }: { url: string }) {
   const { members, isPending } = useMembers();
+  const showMembers = !isPending && members.length > 0;
   return (
     <div className="truncate text-xs text-ink-3">
       {url}
-      {!isPending && members.length > 0 && (
-        <> · {members.length} member{members.length === 1 ? "" : "s"}</>
+      {/* separator only when both halves are present */}
+      {url && showMembers && " · "}
+      {showMembers && (
+        <>{members.length} member{members.length === 1 ? "" : "s"}</>
       )}
     </div>
   );
@@ -70,8 +73,10 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
   // payload (shared react-query cache, so this doesn't add a request on the
   // page that already fetched it).
   const { workspacePlan } = useOverview();
-  const name = workspace?.name ?? WORKSPACE.name;
-  const url = workspace?.slug ?? WORKSPACE.url;
+  // Pre-session fallback is the product name; the slug simply stays blank
+  // until `/auth/me` resolves rather than showing a placeholder domain.
+  const name = workspace?.name ?? BRAND.name;
+  const url = workspace?.slug ?? "";
 
   if (collapsed) {
     return (

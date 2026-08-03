@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 
-import { BRAND } from "@/constants/brand";
 import type { CompanyForm, OnboardingStep } from "@/features/onboarding/types";
 
 const STEP_ORDER: OnboardingStep[] = [
@@ -14,7 +13,9 @@ const STEP_ORDER: OnboardingStep[] = [
 ];
 
 const INITIAL_COMPANY: CompanyForm = {
-  company: BRAND.workspace,
+  /* Empty — the user names their own company. `StepCompany` keeps Next
+   * disabled until this is filled in. */
+  company: "",
   size: "51–200",
   useCase: "support",
   range: "90 days",
