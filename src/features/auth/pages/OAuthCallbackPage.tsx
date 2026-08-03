@@ -68,7 +68,7 @@ export function OAuthCallbackPage() {
 
         {error ? (
           <>
-            <h2 className="mt-8 font-display text-[28px] font-normal leading-[1.05] tracking-[0.015em] text-ink">
+            <h2 className="mt-8 text-2xl font-bold tracking-[-0.02em] text-ink">
               Sign-in failed
             </h2>
             <p className="mt-2 text-[14.5px] text-ink-3">{error}</p>

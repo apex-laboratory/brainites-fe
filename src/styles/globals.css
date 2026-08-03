@@ -90,10 +90,10 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* --- Type families (Hephaestou token system) --- */
-  --font-grotesk: "Hanken Grotesk", system-ui, sans-serif; /* body / UI chrome / data */
-  --font-display: "Bebas Neue", "Hanken Grotesk", system-ui, sans-serif; /* structural headings ≥20px */
-  --font-head: var(--font-display);
-  --font-hand: "Caveat", ui-rounded, cursive; /* handwritten accent — sparing use only */
+  /* Single-family system: one grotesk for everything, contrast comes from
+   * weight and size, not from a second face. Mono is data-only. */
+  --font-grotesk: "Hanken Grotesk", system-ui, sans-serif; /* everything non-tabular */
+  --font-head: var(--font-grotesk);
   --font-serif: ui-serif, Georgia, serif; /* reserved; no webfont loaded */
   --font-mono: "JetBrains Mono", ui-monospace, monospace; /* tabular numbers */
 }

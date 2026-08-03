@@ -20,12 +20,8 @@ export function AuthBrandPanel() {
 
       {/* copy + brand mark, overlaid */}
       <div className="relative mt-auto p-11">
-        <h1 className="font-display text-[53px] font-normal leading-[1.02] tracking-[0.01em]">
-          The answer was always{" "}
-          {/* handwritten accent — the one playful beat on this panel */}
-          <span className="font-hand text-[1.12em] font-semibold tracking-normal text-brand">
-            inside.
-          </span>
+        <h1 className="text-[44px] font-bold leading-[1.04] tracking-tight">
+          The answer was always <span className="text-brand">inside.</span>
         </h1>
         <p className="mt-4 text-[18px] leading-[1.5] text-white/70">
           We help AI agents find it.

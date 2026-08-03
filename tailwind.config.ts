@@ -12,15 +12,9 @@ const config: Config = {
     },
     extend: {
       fontFamily: {
+        /* One family for all text. Headings are this face at 700 with
+         * negative tracking — there is no separate display webfont. */
         sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
-        /* Condensed all-caps display face. Headings ≥20px only — it is
-         * illegible at label sizes. Always pair with positive tracking
-         * (~0.015em); condensed caps need air, not the negative tracking
-         * the grotesk headings used. */
-        display: ["Bebas Neue", "Hanken Grotesk", "system-ui", "sans-serif"],
-        /* Handwritten accent. Celebratory / editorial moments only —
-         * never data, labels, or UI chrome. */
-        hand: ["Caveat", "ui-rounded", "cursive"],
         serif: ["ui-serif", "Georgia", "serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },

@@ -32,7 +32,7 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {label && <SectionLabel className="mb-2 pb-0">{label}</SectionLabel>}
-        <h1 className="font-display text-[31px] font-normal leading-[1.05] tracking-[0.015em] text-ink md:text-[35px]">
+        <h1 className="text-[26px] font-bold tracking-[-0.025em] text-ink md:text-[29px]">
           {title}
         </h1>
         {sub && <p className="mt-1.5 text-sm text-ink-3 md:text-[14.5px]">{sub}</p>}

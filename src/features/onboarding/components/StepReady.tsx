@@ -29,7 +29,7 @@ export function StepReady({ onNext }: StepReadyProps) {
 
         <div className="absolute inset-x-0 bottom-0 p-7 md:p-14">
           <div className="max-w-[560px] motion-safe:animate-fade-up">
-            <h1 className="font-display text-[36px] font-normal leading-[1.02] tracking-[0.01em] text-white md:text-[53px]">
+            <h1 className="text-[30px] font-bold leading-[1.08] tracking-tight text-white md:text-[44px]">
               All set! Your brain is ready.
             </h1>
             <p className="mt-3.5 max-w-[440px] text-[15.5px] leading-[1.5] text-white/85 md:text-[18px]">

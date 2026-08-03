@@ -60,7 +60,7 @@ export function OnboardingFrame({
     >
       <div className="mx-auto max-w-[760px] pb-10 pt-10 md:pt-14">
         <div className="motion-safe:animate-fade-up">
-          <h1 className="font-display text-[34px] font-normal leading-[1.05] tracking-[0.015em] text-ink md:text-[41px]">
+          <h1 className="text-[28px] font-bold tracking-tight text-ink md:text-[34px]">
             {title}
           </h1>
           {sub && (
