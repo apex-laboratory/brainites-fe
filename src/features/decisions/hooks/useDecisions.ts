@@ -9,16 +9,25 @@ import type { Decision } from "../types";
 
 const PAGE_SIZE = 50;
 
+export type DecisionsQuery = {
+  /** Backend status filter; omit for "all". */
+  status?: string;
+  /** Provider id, e.g. from a source card's "View knowledge". */
+  source?: string;
+};
+
 /**
  * Owns the decisions list against `/decisions` — paginated (load-more via
- * cursor), workspace-keyed. Status filtering happens client-side in
- * `useDecisionFilters` so switching the filter never drops the loaded pages or
- * the current selection.
+ * cursor), workspace-keyed.
+ *
+ * Filters are sent to the backend rather than applied to the loaded pages, so
+ * a filter searches the whole workspace; each filter combination is its own
+ * cached, independently paginated query (the params are part of the key).
  */
-export function useDecisions() {
+export function useDecisions({ status, source }: DecisionsQuery = {}) {
   const workspaceId = useWorkspaceId();
 
-  const params = { limit: PAGE_SIZE };
+  const params = { limit: PAGE_SIZE, status, source };
   const query = useInfiniteQuery({
     queryKey: decisionKeys.list(workspaceId, params),
     queryFn: ({ pageParam }) =>

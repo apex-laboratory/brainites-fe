@@ -247,13 +247,19 @@ export function OverviewPage() {
             onAction={() => navigate(ROUTES.sources)}
           >
             <div className="flex flex-col">
-              {liveSources.map((source, i) => (
-                <SourceActivityRow
-                  key={source.meta.id}
-                  entry={source}
-                  className={i ? "border-t border-line-soft" : undefined}
-                />
-              ))}
+              {liveSources.length ? (
+                liveSources.map((source, i) => (
+                  <SourceActivityRow
+                    key={source.meta.id}
+                    entry={source}
+                    className={i ? "border-t border-line-soft" : undefined}
+                  />
+                ))
+              ) : (
+                <p className="px-[18px] py-4 text-[12.5px] text-ink-4">
+                  No sources connected yet.
+                </p>
+              )}
             </div>
           </Panel>
 

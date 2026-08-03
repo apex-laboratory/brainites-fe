@@ -14,8 +14,3 @@ export {
   type SourceProvider,
 } from "./api";
 export { describeSource, type SourcePresentation } from "./utils/status";
-
-// SOURCE_ACTIVITY still backs the "Reading now" ingestion animation, which is a
-// deliberate simulation (no backend feed). Delete it if that ticker is removed.
-export { SOURCE_ACTIVITY } from "./data/source-activity";
-export type { SourceActivity, SourceActivityMap } from "./types";

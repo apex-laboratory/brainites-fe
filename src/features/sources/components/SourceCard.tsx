@@ -109,7 +109,11 @@ export function SourceCard({ entry }: SourceCardProps) {
             </Button>
           }
         />
-        <Button variant="ghost" size="sm" onClick={() => navigate(ROUTES.decisions)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate(`${ROUTES.decisions}?source=${source.provider}`)}
+        >
           View knowledge
           <AppIcon name="arrow" size={14} />
         </Button>

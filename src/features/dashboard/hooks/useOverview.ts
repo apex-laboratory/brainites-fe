@@ -137,6 +137,7 @@ export function useOverview() {
       greeting: greetingForHour(new Date(now).getHours()),
       firstName: data?.greetingName ?? "",
       workspaceName: data?.workspace.name ?? "",
+      workspacePlan: data?.workspace.plan ?? "",
       syncLabel: data?.sync.label ?? "",
       syncTone: syncTone(data?.sync.status),
       kpis: data ? mapKpis(data.kpis) : [],

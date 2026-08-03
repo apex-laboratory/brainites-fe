@@ -1,36 +1,9 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
-import { useMediaQuery } from "@/hooks";
-import { SOURCE_ORDER, SOURCES, type SourceMeta } from "@/constants/sources";
-import type { SourceId } from "@/types/common";
+import { SOURCES, type SourceMeta } from "@/constants/sources";
+import type { SyncStatus } from "../api";
 
-import { SOURCE_ACTIVITY } from "../data/source-activity";
-
-/** How often the simulated ingestion progress advances. */
-const TICK_MS = 110;
-
-/** Per-source advance per tick (in % points). Deterministic and varied so
- * rows progress out of sync, the way independent sync workers would. */
-const SPEED: Record<SourceId, number> = {
-  slack: 2.4,
-  notion: 1.6,
-  github: 3.1,
-  jira: 1.9,
-  zendesk: 2.7,
-  google_drive: 2.1,
-  gmail: 2.2,
-};
-
-/** Staggered starting offsets so the rows don't all begin in lockstep. */
-const OFFSET: Record<SourceId, number> = {
-  slack: 30,
-  notion: 165,
-  github: 80,
-  jira: 220,
-  zendesk: 120,
-  google_drive: 195,
-  gmail: 55,
-};
+import { useSources } from "./useSources";
 
 export type SourceActivityEntry = {
   meta: SourceMeta;
@@ -42,39 +15,48 @@ export type SourceActivityEntry = {
   progress: number;
 };
 
+const VERB: Record<SyncStatus, string> = {
+  syncing: "Reading",
+  healthy: "Synced",
+  pending: "Queued",
+  error: "Sync error on",
+  unknown: "Idle on",
+};
+
+const PROGRESS: Record<SyncStatus, number> = {
+  syncing: 60, // in flight — the row's pulse dot carries the "live" signal
+  healthy: 100,
+  pending: 8,
+  error: 0,
+  unknown: 0,
+};
+
 /**
- * Live "Reading now" read model: surfaces what each connected source is
- * ingesting right now, with a progress bar that ticks forward and rolls onto
- * the next target. Reduced-motion users see a stable snapshot instead of
- * animation. The single side effect here is the timer.
+ * "Reading now" read model, built from the workspace's real `GET /sources`
+ * rows — only connected sources appear, and verb/progress reflect each
+ * source's actual `syncStatus`. (This used to be a fixture-driven animation
+ * over every known provider, which showed sources the workspace had never
+ * connected "reading" fabricated documents.)
  */
 export function useSourceActivity() {
-  const reduced = useMediaQuery("(prefers-reduced-motion: reduce)");
-  const [elapsed, setElapsed] = useState<Record<SourceId, number>>(OFFSET);
+  const { sources: connected } = useSources();
 
-  useEffect(() => {
-    if (reduced) return;
-    const timer = setInterval(() => {
-      setElapsed((prev) => {
-        const next = { ...prev };
-        for (const id of SOURCE_ORDER) next[id] = prev[id] + SPEED[id];
-        return next;
-      });
-    }, TICK_MS);
-    return () => clearInterval(timer);
-  }, [reduced]);
-
-  const sources: SourceActivityEntry[] = SOURCE_ORDER.map((id) => {
-    const activity = SOURCE_ACTIVITY[id];
-    const value = elapsed[id];
-    const index = Math.floor(value / 100) % activity.targets.length;
-    return {
-      meta: SOURCES[id],
-      verb: activity.verb,
-      target: activity.targets[index],
-      progress: Math.round(value % 100),
-    };
-  });
+  const sources: SourceActivityEntry[] = useMemo(
+    () =>
+      connected
+        .filter(({ source }) => source.status !== "disconnected")
+        .map(({ source }) => ({
+          meta: SOURCES[source.provider],
+          verb: VERB[source.syncStatus],
+          target:
+            source.extractedLabel ??
+            (source.activeChannelCount != null
+              ? `${source.activeChannelCount} channel${source.activeChannelCount === 1 ? "" : "s"}`
+              : source.name),
+          progress: PROGRESS[source.syncStatus],
+        })),
+    [connected],
+  );
 
   return { sources };
 }

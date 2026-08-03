@@ -1,6 +1,3 @@
-import { useState } from "react";
-import { toast } from "sonner";
-
 import {
   AppIcon,
   MiniStat,
@@ -24,25 +21,12 @@ export interface DecisionDetailProps {
 /** Right-hand decision detail (prototype `DecisionDetail`). */
 export function DecisionDetail({ decision }: DecisionDetailProps) {
   const [ruleHead, ...ruleRest] = decision.rule.split(" ");
-  const [pinned, setPinned] = useState(false);
 
   const sourceName = decision.src ? SOURCES[decision.src].name : "the source";
-
-  const openSource = () => {
-    toast.info(`Opening in ${sourceName}`, {
-      description: decision.where || undefined,
-    });
-  };
-
-  const togglePin = () => {
-    setPinned((prev) => {
-      const next = !prev;
-      toast.success(next ? "Pinned to your brain" : "Removed from pinned", {
-        description: decision.title,
-      });
-      return next;
-    });
-  };
+  // `where` carries the source_location the pipeline recorded — a link for
+  // providers that give one (a Notion page, a Slack permalink), otherwise a
+  // human label like "#cs-escalations". Only the former can be opened.
+  const sourceUrl = /^https?:\/\//.test(decision.where) ? decision.where : null;
 
   return (
     <div className="min-w-0 flex-1 overflow-y-auto px-6 pb-14 pt-7 md:px-8">
@@ -58,19 +42,19 @@ export function DecisionDetail({ decision }: DecisionDetailProps) {
           </h2>
         </div>
         <div className="ml-auto flex shrink-0 gap-2">
-          <Button variant="outline" size="sm" onClick={openSource}>
-            <AppIcon name="externalLink" size={14} />
-            Source
-          </Button>
-          <Button
-            variant={pinned ? "outline" : "solid"}
-            size="sm"
-            onClick={togglePin}
-            aria-pressed={pinned}
-          >
-            <AppIcon name={pinned ? "check" : "pin"} size={14} />
-            {pinned ? "Pinned" : "Pin"}
-          </Button>
+          {sourceUrl && (
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href={sourceUrl}
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`Open this decision in ${sourceName}`}
+              >
+                <AppIcon name="externalLink" size={14} />
+                Source
+              </a>
+            </Button>
+          )}
         </div>
       </div>
 

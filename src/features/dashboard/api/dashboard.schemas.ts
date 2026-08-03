@@ -100,3 +100,18 @@ export type Overview = z.infer<typeof OverviewSchema>;
 
 /** `GET /activity` returns the event array directly in `data` (cursor in meta). */
 export const ActivityListSchema = z.array(ActivityEventSchema);
+
+/**
+ * `GET /workspaces/{id}/usage` — measured usage counters for the settings Usage
+ * tab and the sidebar meter. Everything here is counted server-side from
+ * `agent_interactions` / `skills`. There is **no quota system**, so the payload
+ * carries no limit or percentage — the UI must not invent one.
+ */
+export const UsageSchema = z.object({
+  queries30d: z.number(),
+  skillsServed30d: z.number(),
+  activeSkills: z.number(),
+  /** Queries per day for the last 7 days, oldest first. */
+  querySeries: z.array(z.number()),
+});
+export type Usage = z.infer<typeof UsageSchema>;

@@ -9,7 +9,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
-import { SOURCE_ORDER } from "@/constants/sources";
+import { useSources } from "@/features/sources";
 
 import { ChatMessage } from "../components/ChatMessage";
 import { ConversationList } from "../components/ConversationList";
@@ -62,6 +62,12 @@ export function BrainChatPage() {
     openConversation,
     startNewConversation,
   } = useBrainChatContext();
+  // The header's "reading N sources" line counts what this workspace has
+  // actually connected, not the size of the provider registry.
+  const { sources: connectedSources } = useSources();
+  const connectedCount = connectedSources.filter(
+    ({ source }) => source.status !== "disconnected",
+  ).length;
   const [draft, setDraft] = useState("");
   const [historyOpen, setHistoryOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -132,8 +138,12 @@ export function BrainChatPage() {
           </div>
           <StatusIndicator
             tone="live"
-            label={`Reading ${SOURCE_ORDER.length} sources · live`}
-            pulse
+            label={
+              connectedCount
+                ? `Reading ${connectedCount} source${connectedCount === 1 ? "" : "s"} · live`
+                : "No sources connected"
+            }
+            pulse={connectedCount > 0}
           />
         </div>
         <Button

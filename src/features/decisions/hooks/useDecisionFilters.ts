@@ -1,8 +1,8 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import type { SegmentedOption } from "@/components/shared";
 
-import type { Decision, DecisionStatus } from "../types";
+import type { DecisionStatus } from "../types";
 
 export type DecisionFilter = "all" | DecisionStatus;
 
@@ -13,17 +13,14 @@ const FILTER_OPTIONS: SegmentedOption<DecisionFilter>[] = [
   { value: "review", label: "Review" },
 ];
 
-/** Owns the decisions status filter, applied client-side over the loaded list. */
-export function useDecisionFilters(decisions: Decision[]) {
+/**
+ * Owns the decisions status filter.
+ *
+ * State only — the filter is applied **server-side** by passing it to
+ * `useDecisions`. Filtering in memory would only ever search the pages already
+ * loaded, so a status whose rows start on page 3 would look empty.
+ */
+export function useDecisionFilters() {
   const [filter, setFilter] = useState<DecisionFilter>("all");
-
-  const filtered = useMemo<Decision[]>(
-    () =>
-      filter === "all"
-        ? decisions
-        : decisions.filter((decision) => decision.status === filter),
-    [decisions, filter],
-  );
-
-  return { filter, setFilter, filtered, options: FILTER_OPTIONS };
+  return { filter, setFilter, options: FILTER_OPTIONS };
 }

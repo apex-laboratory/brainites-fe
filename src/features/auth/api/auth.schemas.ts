@@ -47,7 +47,11 @@ export type MeWorkspace = z.infer<typeof MeWorkspaceSchema>;
 export const MeSchema = z.object({
   user: UserSchema,
   workspace: MeWorkspaceSchema.nullable(),
-  role: AuthRoleSchema.nullable(),
+  // `.catch("viewer")`: the backend types role as an open string — a role we
+  // don't know yet must degrade to least privilege, not fail the whole
+  // /auth/me parse (which would strand the app on a stale localStorage
+  // identity snapshot).
+  role: AuthRoleSchema.nullable().catch("viewer"),
   nextStep: NextStepSchema,
 });
 export type Me = z.infer<typeof MeSchema>;

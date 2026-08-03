@@ -3,8 +3,10 @@ import { api, type Page } from "@/lib/api";
 import {
   ActivityListSchema,
   OverviewSchema,
+  UsageSchema,
   type ActivityEvent,
   type Overview,
+  type Usage,
 } from "./dashboard.schemas";
 
 /**
@@ -26,9 +28,14 @@ export const dashboardApi = {
     params?: { limit?: number; cursor?: string },
   ): Promise<Page<ActivityEvent[]>> =>
     api.getPage(`/workspaces/${workspaceId}/activity`, ActivityListSchema, { params }),
+
+  /** Measured usage counters (settings Usage tab + sidebar meter). */
+  usage: (workspaceId: string): Promise<Usage> =>
+    api.get(`/workspaces/${workspaceId}/usage`, UsageSchema),
 };
 
 export const dashboardKeys = {
   overview: (workspaceId: string) => ["overview", workspaceId] as const,
   activity: (workspaceId: string) => ["activity", workspaceId] as const,
+  usage: (workspaceId: string) => ["usage", workspaceId] as const,
 };
