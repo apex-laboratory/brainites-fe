@@ -6,4 +6,5 @@ export type {
   Overview,
   ReviewSummary,
   SourceSummary,
+  Usage,
 } from "./dashboard.schemas";

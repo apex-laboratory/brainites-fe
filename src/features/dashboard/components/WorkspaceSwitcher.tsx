@@ -15,9 +15,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ROUTES } from "@/constants/routes";
+import { useMembers } from "@/features/settings";
 import { cn } from "@/utils/cn";
 
+import { useOverview } from "../hooks/useOverview";
 import { WORKSPACE } from "../data/workspace";
+
+/**
+ * The `slug · N members` line. Lives in its own component because radix
+ * unmounts closed dropdown content — so the roster is only fetched when someone
+ * actually opens the switcher, not on every dashboard page load.
+ */
+function WorkspaceMeta({ url }: { url: string }) {
+  const { members, isPending } = useMembers();
+  return (
+    <div className="truncate text-xs text-ink-3">
+      {url}
+      {!isPending && members.length > 0 && (
+        <> · {members.length} member{members.length === 1 ? "" : "s"}</>
+      )}
+    </div>
+  );
+}
 
 export interface WorkspaceSwitcherProps {
   collapsed: boolean;
@@ -47,8 +66,10 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
   const navigate = useNavigate();
   const { workspace } = useAuth();
 
-  // Name + url come from the live session; plan tier and member count have no
-  // backend yet, so they stay on the static workspace fixture.
+  // Name + url come from the live session; the plan tier rides on the overview
+  // payload (shared react-query cache, so this doesn't add a request on the
+  // page that already fetched it).
+  const { workspacePlan } = useOverview();
   const name = workspace?.name ?? WORKSPACE.name;
   const url = workspace?.slug ?? WORKSPACE.url;
 
@@ -83,7 +104,7 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
               {name}
             </span>
             <span className="block truncate text-[11px] leading-tight text-ink-4">
-              {WORKSPACE.plan}
+              {workspacePlan ? `${workspacePlan} workspace` : ""}
             </span>
           </span>
           <AppIcon
@@ -99,9 +120,7 @@ export function WorkspaceSwitcher({ collapsed, onLogout }: WorkspaceSwitcherProp
           <WorkspaceMark />
           <div className="min-w-0">
             <div className="truncate text-sm font-bold text-ink">{name}</div>
-            <div className="truncate text-xs text-ink-3">
-              {url} · {WORKSPACE.memberCount} members
-            </div>
+            <WorkspaceMeta url={url} />
           </div>
         </div>
         <DropdownMenuSeparator />

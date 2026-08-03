@@ -26,4 +26,3 @@ export type {
   MemberRole,
   Settings,
 } from "./api";
-export { USAGE_METRICS, type UsageMetric } from "./data/usage";

@@ -16,8 +16,11 @@ export const BrainStatusSchema = z.object({
   enabled: z.boolean(),
   ready: z.boolean(),
   skillsIndexed: z.number(),
-  /** `null` when ready, else `"disabled"` (kill-switch) or `"no_skills"`. */
-  reason: z.enum(["disabled", "no_skills"]).nullish(),
+  /** `null` when ready, else `"disabled"` (kill-switch) or `"no_skills"`.
+   * `.catch(null)`: the backend types this as an open string — a new reason
+   * must degrade to the generic not-ready copy, not fail the whole status
+   * parse (which would silently disable the readiness gate). */
+  reason: z.enum(["disabled", "no_skills"]).nullish().catch(null),
 });
 export type BrainStatus = z.infer<typeof BrainStatusSchema>;
 

@@ -1,25 +1,43 @@
-import { Progress } from "@/components/ui/progress";
-import { SectionLabel } from "@/components/shared";
+import { SectionLabel, Skeleton, Sparkline } from "@/components/shared";
 
-import { BRAIN_USAGE } from "../data/workspace";
+import { useUsage } from "../hooks/useUsage";
 
-/** Brain usage meter pinned to the foot of the expanded sidebar. */
+/**
+ * Brain usage summary pinned to the foot of the expanded sidebar.
+ *
+ * Shows the measured 30-day query count and its 7-day shape. Deliberately not a
+ * progress bar: there is no quota behind `GET /usage`, so a "% of limit" would
+ * be an invented number.
+ */
 export function UsageMeter() {
+  const { usage, isPending, isError } = useUsage();
+
+  if (isError) return null; // an accessory panel; never a sidebar error state
+
   return (
     <div className="mt-2 border-t border-line px-2.5 py-3">
       <div className="mb-2 flex items-center justify-between">
         <SectionLabel className="whitespace-nowrap pb-0">Brain usage</SectionLabel>
-        <span className="tnum text-[11.5px] font-semibold text-ink-3">
-          {BRAIN_USAGE.percent}%
-        </span>
+        {isPending ? (
+          <Skeleton className="h-[13px] w-10" />
+        ) : (
+          <span className="tnum text-[11.5px] font-semibold text-ink-3">
+            {usage?.queries30d ?? 0}
+          </span>
+        )}
       </div>
-      <Progress
-        value={BRAIN_USAGE.percent}
-        className="h-[5px]"
-        aria-label={`Brain usage ${BRAIN_USAGE.percent} percent`}
-      />
+      {isPending ? (
+        <Skeleton className="h-[28px] w-full" />
+      ) : (
+        <Sparkline
+          data={usage?.querySeries ?? []}
+          width={168}
+          height={28}
+          color="var(--accent-hex)"
+        />
+      )}
       <p className="mt-2 text-[11.5px] text-ink-4">
-        {BRAIN_USAGE.used} of {BRAIN_USAGE.limit} queries {BRAIN_USAGE.period}
+        {isPending ? "Loading usage…" : "queries in the last 30 days"}
       </p>
     </div>
   );

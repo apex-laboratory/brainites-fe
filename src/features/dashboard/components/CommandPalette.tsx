@@ -19,7 +19,7 @@ import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
 
 import { NAV_KNOWLEDGE, NAV_MAIN } from "../data/navigation";
-import { RECENT_QUESTIONS } from "../data/recent-questions";
+import { useOverview } from "../hooks/useOverview";
 
 type NavTarget = { key: string; label: string; icon: AppIconName; path: string };
 
@@ -66,10 +66,14 @@ export function CommandPalette({ open, onOpenChange, onAsk }: CommandPaletteProp
     onOpenChange(next);
   };
 
+  // The workspace's actual recent questions, straight off the overview payload
+  // (same react-query cache the home screen fills — no extra request).
+  const { suggestions: recentQuestions } = useOverview();
+
   const trimmed = query.trim();
   const q = trimmed.toLowerCase();
   const navMatches = NAV.filter((item) => item.label.toLowerCase().includes(q));
-  const recentMatches = RECENT_QUESTIONS.filter((item) =>
+  const recentMatches = recentQuestions.filter((item) =>
     item.toLowerCase().includes(q)
   );
 

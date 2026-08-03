@@ -1,3 +1,5 @@
+import { useSearchParams } from "react-router-dom";
+
 import {
   EmptyState,
   ErrorState,
@@ -6,6 +8,7 @@ import {
   Skeleton,
 } from "@/components/shared";
 import { Button } from "@/components/ui/button";
+import { SOURCES, asSourceId } from "@/constants/sources";
 
 import { DecisionDetail } from "../components/DecisionDetail";
 import { DecisionRow } from "../components/DecisionRow";
@@ -16,6 +19,12 @@ import { useSelectedDecision } from "../hooks/useSelectedDecision";
 
 /** Decisions master–detail screen, backed by `/decisions`. */
 export function DecisionsPage() {
+  // `?source=` arrives from a source card's "View knowledge" — scope the list to
+  // what that connector produced. Both filters are applied server-side.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sourceParam = asSourceId(searchParams.get("source"));
+
+  const { filter, setFilter, options } = useDecisionFilters();
   const {
     decisions,
     isPending,
@@ -25,28 +34,42 @@ export function DecisionsPage() {
     hasMore,
     isFetchingMore,
     loadMore,
-  } = useDecisions();
-  const { filter, setFilter, filtered, options } = useDecisionFilters(decisions);
-  const { selectedId, setSelectedId, selected } = useSelectedDecision(filtered);
+  } = useDecisions({
+    status: filter === "all" ? undefined : filter,
+    source: sourceParam ?? undefined,
+  });
+  const { selectedId, setSelectedId, selected } = useSelectedDecision(decisions);
   // The list row renders immediately; the detail fetch refines it in place.
   const { decision: openDecision } = useDecision(selectedId, selected);
 
   const count = decisions.length;
+  const sourceName = sourceParam ? SOURCES[sourceParam].name : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageHeader
         label={`Company logic · ${count} decision${count === 1 ? "" : "s"}`}
-        title="Decisions"
+        title={sourceName ? `Decisions from ${sourceName}` : "Decisions"}
         sub="The calls your team has made, extracted and made executable."
         right={
           isPending || isError ? undefined : (
-            <Segmented
-              value={filter}
-              options={options}
-              onChange={setFilter}
-              ariaLabel="Filter decisions by status"
-            />
+            <div className="flex items-center gap-2">
+              {sourceName && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSearchParams({})}
+                >
+                  Clear source
+                </Button>
+              )}
+              <Segmented
+                value={filter}
+                options={options}
+                onChange={setFilter}
+                ariaLabel="Filter decisions by status"
+              />
+            </div>
           )
         }
       />
@@ -76,7 +99,7 @@ export function DecisionsPage() {
       ) : (
         <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
           <div className="shrink-0 overflow-y-auto border-line py-2 max-lg:max-h-72 max-lg:border-b lg:w-[340px] lg:border-r">
-            {filtered.map((decision) => (
+            {decisions.map((decision) => (
               <DecisionRow
                 key={decision.id}
                 decision={decision}
