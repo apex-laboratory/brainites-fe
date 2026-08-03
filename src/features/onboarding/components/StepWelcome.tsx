@@ -25,13 +25,16 @@ export function StepWelcome({ onNext }: { onNext: () => void }) {
       {/* content */}
       <div className="absolute inset-x-0 bottom-0 p-7 md:p-14">
         <div className="max-w-[640px] motion-safe:animate-fade-up">
-          <h1 className="font-logo text-[44px] font-normal leading-[1.02] text-white md:text-[68px]">
+          <h1 className="font-display text-[48px] font-normal leading-[1.0] tracking-[0.01em] text-white md:text-[74px]">
             Welcome to {BRAND.onboardingName}
             <span className="text-[#C2410C]">.</span>
           </h1>
           <p className="mt-4 text-[17px] leading-[1.5] text-white/85 md:text-[21px]">
             Let&apos;s build your team&apos;s superpowered{" "}
-            <span className="font-semibold" style={{ color: "#FF9356" }}>
+            <span
+              className="font-hand text-[1.3em] font-semibold"
+              style={{ color: "#FF9356" }}
+            >
               knowledge base
             </span>
             .

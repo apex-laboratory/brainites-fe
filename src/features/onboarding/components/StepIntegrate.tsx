@@ -180,7 +180,7 @@ export function StepIntegrate({ onBack, onDone }: StepIntegrateProps) {
             <SectionLabel className="pb-0">Connect your agents</SectionLabel>
             <Badge variant="green">Live</Badge>
           </div>
-          <h1 className="text-[28px] font-bold tracking-tight text-ink md:text-[34px]">
+          <h1 className="font-display text-[34px] font-normal leading-[1.05] tracking-[0.015em] text-ink md:text-[41px]">
             Plug {workspaceName} into your agents
           </h1>
           <p className="mt-3 max-w-[560px] text-[15px] leading-[1.5] text-ink-3 md:text-base">

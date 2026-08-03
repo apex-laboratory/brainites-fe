@@ -89,7 +89,7 @@ export function OnboardingShell({
         <AppLogo size="xl" flush />
         <div className="mt-11">
           <SectionLabel className="mb-1.5">Setup</SectionLabel>
-          <h2 className="mb-7 text-[21px] font-bold tracking-tight text-ink">
+          <h2 className="mb-7 font-display text-[25px] font-normal leading-[1.05] tracking-[0.015em] text-ink">
             Build your brain
           </h2>
           <Stepper active={stepIndex} />

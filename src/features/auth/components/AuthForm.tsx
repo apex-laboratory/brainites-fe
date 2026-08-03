@@ -66,7 +66,7 @@ export function AuthForm() {
       >
         <AppLogo size="lg" flush />
 
-        <h2 className="mt-8 font-logo text-[34px] font-normal leading-[1.05] text-ink md:text-[40px]">
+        <h2 className="mt-8 font-display text-[38px] font-normal leading-[1.05] tracking-[0.015em] text-ink md:text-[45px]">
           {isSignup ? "Create your account" : "Welcome back"}
           <span className="text-[#C2410C]">.</span>
         </h2>

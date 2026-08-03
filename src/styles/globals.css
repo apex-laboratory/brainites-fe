@@ -90,9 +90,11 @@
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 
   /* --- Type families (Hephaestou token system) --- */
-  --font-grotesk: "Hanken Grotesk", system-ui, sans-serif; /* primary / headings / body */
-  --font-head: var(--font-grotesk);
-  --font-serif: "Newsreader", ui-serif, Georgia, serif; /* editorial italic accents */
+  --font-grotesk: "Hanken Grotesk", system-ui, sans-serif; /* body / UI chrome / data */
+  --font-display: "Bebas Neue", "Hanken Grotesk", system-ui, sans-serif; /* structural headings ≥20px */
+  --font-head: var(--font-display);
+  --font-hand: "Caveat", ui-rounded, cursive; /* handwritten accent — sparing use only */
+  --font-serif: ui-serif, Georgia, serif; /* reserved; no webfont loaded */
   --font-mono: "JetBrains Mono", ui-monospace, monospace; /* tabular numbers */
 }
 

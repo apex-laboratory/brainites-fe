@@ -13,9 +13,16 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
-        serif: ["Newsreader", "ui-serif", "Georgia", "serif"],
+        /* Condensed all-caps display face. Headings ≥20px only — it is
+         * illegible at label sizes. Always pair with positive tracking
+         * (~0.015em); condensed caps need air, not the negative tracking
+         * the grotesk headings used. */
+        display: ["Bebas Neue", "Hanken Grotesk", "system-ui", "sans-serif"],
+        /* Handwritten accent. Celebratory / editorial moments only —
+         * never data, labels, or UI chrome. */
+        hand: ["Caveat", "ui-rounded", "cursive"],
+        serif: ["ui-serif", "Georgia", "serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
-        logo: ["Instrument Serif", "Newsreader", "ui-serif", "serif"],
       },
       colors: {
         /* shadcn semantic tokens (HSL via CSS variables) */

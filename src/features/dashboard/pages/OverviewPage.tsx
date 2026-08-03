@@ -93,7 +93,7 @@ export function OverviewPage() {
       {/* greeting */}
       <div className="flex flex-wrap items-end gap-5">
         <div>
-          <h1 className="text-[26px] font-bold tracking-[-0.03em] text-ink md:text-[30px]">
+          <h1 className="font-display text-[31px] font-normal leading-[1.05] tracking-[0.015em] text-ink md:text-[36px]">
             {greeting}, {firstName}
           </h1>
           <p className="mt-1.5 text-[15px] text-ink-3">

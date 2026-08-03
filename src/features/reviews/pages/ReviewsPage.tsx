@@ -142,7 +142,10 @@ export function ReviewsPage() {
               <div className="mx-auto mb-4 grid size-14 place-items-center rounded-full bg-green-soft">
                 <AppIcon name="check" size={26} className="text-green" />
               </div>
-              <h2 className="text-[22px] font-bold text-ink">Queue clear</h2>
+              {/* handwritten accent — celebratory empty state */}
+              <h2 className="font-hand text-[34px] font-semibold leading-tight text-ink">
+                Queue clear
+              </h2>
               <p className="mt-2 text-ink-3">
                 Every proposed change has been reviewed. The brain is up to date.
               </p>

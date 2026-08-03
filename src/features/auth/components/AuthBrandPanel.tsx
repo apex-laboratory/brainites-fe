@@ -20,9 +20,10 @@ export function AuthBrandPanel() {
 
       {/* copy + brand mark, overlaid */}
       <div className="relative mt-auto p-11">
-        <h1 className="text-[44px] font-bold leading-[1.04] tracking-tight">
+        <h1 className="font-display text-[53px] font-normal leading-[1.02] tracking-[0.01em]">
           The answer was always{" "}
-          <span className="font-serif text-[1.04em] font-normal italic text-brand">
+          {/* handwritten accent — the one playful beat on this panel */}
+          <span className="font-hand text-[1.12em] font-semibold tracking-normal text-brand">
             inside.
           </span>
         </h1>

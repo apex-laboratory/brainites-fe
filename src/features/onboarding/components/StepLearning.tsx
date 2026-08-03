@@ -226,7 +226,7 @@ function Frame({
 }) {
   return (
     <>
-      <h1 className="text-[28px] font-bold tracking-tight text-white md:text-[36px]">
+      <h1 className="font-display text-[34px] font-normal leading-[1.05] tracking-[0.015em] text-white md:text-[43px]">
         {title}
       </h1>
       <p className="mt-2.5 max-w-[460px] text-[15px] leading-[1.5] text-white/85 md:text-base">
