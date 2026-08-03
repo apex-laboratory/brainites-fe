@@ -161,7 +161,7 @@ export function BrainChatPage() {
 
       {/* transcript */}
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex max-w-[760px] flex-col gap-5 px-6 py-8 md:px-10">
+        <div className="flex flex-col gap-5 px-6 py-8 md:px-10">
           {messages.map((message, i) => (
             <ChatMessage key={i} message={message} />
           ))}
@@ -194,7 +194,7 @@ export function BrainChatPage() {
 
       {/* composer */}
       <div className="border-t border-line bg-paper/80 backdrop-blur">
-        <div className="mx-auto max-w-[760px] px-6 py-4 md:px-10">
+        <div className="px-6 py-4 md:px-10">
           <div className="flex items-end gap-2 rounded-2xl border border-line-2 bg-paper-2 p-2 shadow-soft-1 focus-within:border-brand">
             <Textarea
               value={draft}
