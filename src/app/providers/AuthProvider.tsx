@@ -24,6 +24,7 @@ import {
   type WorkspaceSummary,
 } from "@/features/auth/api";
 import {
+  clearPersistedCache,
   clearTokens,
   hasSession,
   isApiError,
@@ -131,6 +132,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSnapshot(null);
     setStatus("unauthenticated");
     queryClient.clear();
+    // The in-memory cache is gone; drop the localStorage copy too, or the next
+    // person to load this origin restores the last user's workspace data.
+    clearPersistedCache();
   }, [setSnapshot]);
 
   // ── Rehydrate on mount ────────────────────────────────────────────────────
@@ -185,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSnapshot(null);
         setStatus("unauthenticated");
         queryClient.clear();
+        clearPersistedCache();
         toast.error("Your session expired. Please sign in again.");
         navigate(ROUTES.auth);
       }),

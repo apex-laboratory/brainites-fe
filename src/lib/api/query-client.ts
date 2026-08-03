@@ -19,9 +19,20 @@ export type MutationErrorMeta = {
   errorMessages?: Partial<Record<ApiErrorCode, string>>;
 };
 
+/**
+ * Per-query knobs that live outside the query's own options.
+ *
+ * `persist: false` keeps an entry out of the localStorage snapshot. Set it on
+ * anything holding a credential or a one-shot secret — see `persist.ts`.
+ */
+export type QueryMeta = {
+  persist?: boolean;
+};
+
 declare module "@tanstack/react-query" {
   interface Register {
     mutationMeta: MutationErrorMeta;
+    queryMeta: QueryMeta;
   }
 }
 

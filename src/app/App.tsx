@@ -1,5 +1,5 @@
 import { BrowserRouter } from "react-router-dom";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { ThemeProvider } from "@/app/providers/ThemeProvider";
@@ -8,11 +8,15 @@ import { AppRouter } from "@/app/router";
 import { AppShell } from "@/components/shared/AppShell";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
-import { queryClient } from "@/lib/api";
+import { persistOptions, queryClient } from "@/lib/api";
 
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    // Restores the last session's query cache from localStorage before the
+    // first fetch, so a reload paints the shell *and* its data instead of a
+    // screen of spinners. Every restored query is stale on arrival and
+    // revalidates on mount — this buys first paint, not freshness.
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <BrowserRouter>
         <ThemeProvider>
           <AuthProvider>
@@ -26,6 +30,6 @@ export function App() {
         </ThemeProvider>
       </BrowserRouter>
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

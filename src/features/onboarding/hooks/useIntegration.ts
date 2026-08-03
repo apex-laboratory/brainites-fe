@@ -63,6 +63,9 @@ export function useIntegration() {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     retry: false,
+    // `data.apiKey` is the raw secret, shown once. It stays in memory for the
+    // life of the tab and never reaches the persisted cache on disk.
+    meta: { persist: false },
   });
   const created: ApiKeyCreated | null = keyQuery.data ?? null;
 
