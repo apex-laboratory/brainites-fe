@@ -49,7 +49,10 @@ export function useConnectionLanding() {
     } else if (connected) {
       const name = SOURCES[connected as SourceId]?.name ?? connected;
       toast.success(`${name} connected`, {
-        description: "We'll let you know once the first sync completes.",
+        // The backend starts importing this source's history right after a
+        // dashboard connect. If that didn't take, the card says so and offers
+        // the import — so promise the import, not a notification we never send.
+        description: "We're importing its history now — this can take a few minutes.",
       });
       if (workspaceId) {
         void queryClient.invalidateQueries({ queryKey: sourceKeys.all(workspaceId) });

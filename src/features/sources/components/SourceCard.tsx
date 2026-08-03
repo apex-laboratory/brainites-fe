@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ROUTES } from "@/constants/routes";
 
+import { useBackfillSource } from "../hooks/useBackfillSource";
 import type { SourceEntry } from "../hooks/useSources";
 import { ManageSourceDialog } from "./ManageSourceDialog";
 import { SourceStatusLine } from "./SourceStatus";
@@ -33,6 +34,11 @@ export interface SourceCardProps {
 export function SourceCard({ entry }: SourceCardProps) {
   const { source, meta } = entry;
   const navigate = useNavigate();
+  const backfill = useBackfillSource();
+
+  // Server-owned: `needsBackfill` already accounts for an import in flight, so
+  // the two are mutually exclusive and the panel below covers both states.
+  const importing = source.syncStatus === "syncing";
 
   const stats = [
     source.extractedLabel && { label: "Knowledge", value: source.extractedLabel },
@@ -96,6 +102,32 @@ export function SourceCard({ entry }: SourceCardProps) {
               />
             </div>
           )}
+        </div>
+      )}
+
+      {(source.needsBackfill || importing) && (
+        <div className="mt-[18px] rounded-lg border border-amber/30 bg-amber/[0.06] p-3">
+          <div className="text-[12.5px] text-ink-2">
+            {importing
+              ? "Importing everything from before this source was connected."
+              : "This source only knows what's happened since it was connected."}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2.5 w-full"
+            disabled={importing || backfill.isPending}
+            onClick={() => backfill.mutate(source.id)}
+          >
+            {importing ? (
+              "Importing history…"
+            ) : (
+              <>
+                <AppIcon name="refresh" size={14} />
+                Import history
+              </>
+            )}
+          </Button>
         </div>
       )}
 
