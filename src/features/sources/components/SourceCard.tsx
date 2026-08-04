@@ -16,6 +16,7 @@ import { ROUTES } from "@/constants/routes";
 import { useBackfillSource } from "../hooks/useBackfillSource";
 import type { SourceEntry } from "../hooks/useSources";
 import { ManageSourceDialog } from "./ManageSourceDialog";
+import { SourceReadReportDialog } from "./SourceReadReportDialog";
 import { SourceStatusLine } from "./SourceStatus";
 
 export interface SourceCardProps {
@@ -39,6 +40,11 @@ export function SourceCard({ entry }: SourceCardProps) {
   // Server-owned: `needsBackfill` already accounts for an import in flight, so
   // the two are mutually exclusive and the panel below covers both states.
   const importing = source.syncStatus === "syncing";
+
+  // Read a lot and kept nothing is the outcome that reads as a broken
+  // integration, so it gets the amber treatment and the report one click away.
+  const itemsRead = source.itemsRead;
+  const nothingKept = (source.skillsKept ?? 0) === 0 && (itemsRead ?? 0) > 0;
 
   const stats = [
     source.extractedLabel && { label: "Knowledge", value: source.extractedLabel },
@@ -129,6 +135,28 @@ export function SourceCard({ entry }: SourceCardProps) {
             )}
           </Button>
         </div>
+      )}
+
+      {itemsRead != null && itemsRead > 0 && (
+        <SourceReadReportDialog
+          source={source}
+          meta={meta}
+          trigger={
+            <button
+              type="button"
+              className="mt-[18px] flex w-full items-center gap-1.5 rounded-[9px] border border-line px-3 py-2 text-left text-[12.5px] transition-colors hover:bg-cream focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              <span className="text-ink-2">
+                Read <span className="tnum font-bold text-ink">{itemsRead}</span> ·
+                kept{" "}
+                <span className={`tnum font-bold ${nothingKept ? "text-amber" : "text-ink"}`}>
+                  {source.skillsKept ?? 0}
+                </span>
+              </span>
+              <AppIcon name="arrow" size={13} className="ml-auto shrink-0 text-ink-4" />
+            </button>
+          }
+        />
       )}
 
       <div className="mt-auto flex gap-2.5 pt-[18px]">

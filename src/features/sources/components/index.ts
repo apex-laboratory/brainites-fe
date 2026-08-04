@@ -4,6 +4,10 @@ export {
   ManageSourceDialog,
   type ManageSourceDialogProps,
 } from "./ManageSourceDialog";
+export {
+  SourceReadReportDialog,
+  type SourceReadReportDialogProps,
+} from "./SourceReadReportDialog";
 export { SourceStatusLine } from "./SourceStatus";
 export {
   SourceActivityRow,

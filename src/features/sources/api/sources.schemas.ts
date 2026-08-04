@@ -96,6 +96,16 @@ export const SourceSchema = z.object({
    */
   needsBackfill: z.boolean().nullish(),
 
+  /**
+   * What this source has read and what became of it, across its whole lifetime —
+   * not just the last import, since webhooks add events outside any sweep.
+   * `skillsKept === 0 && itemsRead > 0` is the state that reads as broken, and is
+   * exactly what the read report exists to explain.
+   */
+  itemsRead: z.number().nullish(),
+  skillsKept: z.number().nullish(),
+  discarded: z.number().nullish(),
+
   pendingItems: z.number().nullish(),
   activeChannelCount: z.number().nullish(),
   extractedLabel: z.string().nullish(),
@@ -117,6 +127,35 @@ export const SourceListSchema = z.array(z.unknown()).transform((rows) =>
     return kept;
   }, []),
 );
+
+/**
+ * One reason-bucket in the read report. `label` is resolved backend-side from the
+ * pipeline stage, so the UI never renders internal vocabulary like
+ * "relevance_gate" — and a stage added to the pipeline later still gets a label
+ * without a frontend deploy. `stage` is kept for keys and debugging only.
+ *
+ * `sampleReasons` are verbatim model sentences, capped at three: they're free-text
+ * and near-unique (56 discarded events produced 56 distinct ones), so the count
+ * carries the signal and the samples carry the texture.
+ */
+export const DiscardGroupSchema = z.object({
+  stage: z.string(),
+  label: z.string(),
+  count: z.number(),
+  sampleReasons: z.array(z.string()).default([]),
+});
+export type DiscardGroup = z.infer<typeof DiscardGroupSchema>;
+
+/** `GET /sources/{id}/report` — what this source read, and why things dropped. */
+export const SourceReportSchema = z.object({
+  sourceId: z.string(),
+  itemsRead: z.number(),
+  skillsKept: z.number(),
+  discarded: z.number(),
+  pendingItems: z.number(),
+  discardedByStage: z.array(DiscardGroupSchema).default([]),
+});
+export type SourceReport = z.infer<typeof SourceReportSchema>;
 
 /** `POST /sources/{provider}/authorize` → the provider consent URL. */
 export const AuthorizeSchema = z.object({

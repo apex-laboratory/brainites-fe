@@ -5,11 +5,13 @@ import { api } from "@/lib/api";
 import {
   AuthorizeSchema,
   SourceListSchema,
+  SourceReportSchema,
   SourceScopeSchema,
   type Authorize,
   type ChannelSelection,
   type Source,
   type SourceProvider,
+  type SourceReport,
   type SourceScope,
 } from "./sources.schemas";
 
@@ -46,6 +48,14 @@ export const sourcesApi = {
     api.get(`/sources/${sourceId}/channels`, SourceScopeSchema),
 
   /**
+   * What this source read, what became knowledge, and why the rest didn't.
+   * Strictly parsed: every field is rendered as a number or a reason the user is
+   * meant to trust, so drift should be loud rather than silently blank.
+   */
+  report: (sourceId: string): Promise<SourceReport> =>
+    api.get(`/sources/${sourceId}/report`, SourceReportSchema),
+
+  /**
    * Persist the channel selection + lookback window. Returns the scope as now
    * stored — including `lookbackDays` — so the caller can seed its cache from
    * the response rather than refetching to learn what was saved.
@@ -80,6 +90,10 @@ export const sourcesApi = {
  */
 export const sourceKeys = {
   all: (workspaceId: string) => ["sources", workspaceId] as const,
+  channels: (workspaceId: string, sourceId: string) =>
+    ["sources", workspaceId, "channels", sourceId] as const,
+  report: (workspaceId: string, sourceId: string) =>
+    ["sources", workspaceId, "report", sourceId] as const,
   scope: (workspaceId: string, sourceId: string) =>
     ["sources", workspaceId, "scope", sourceId] as const,
 };
