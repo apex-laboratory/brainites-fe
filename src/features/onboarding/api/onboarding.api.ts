@@ -6,7 +6,7 @@ import {
   OnboardingResultSchema,
   SweepSchema,
   toTeamSize,
-  toUseCase,
+  toUseCases,
   type CreateWorkspaceResult,
   type OnboardingResult,
   type OnboardingStepValue,
@@ -20,7 +20,12 @@ import {
 export interface CreateWorkspaceInput {
   companyName: string;
   teamSize: TeamSize;
+  /** The first checked use case — the backend keeps this single field. */
   primaryUseCase: UseCase;
+  /** Every checked use case, in the order they were picked. */
+  useCases: UseCase[];
+  /** Free text from the "Something else" box; omitted when it isn't checked. */
+  useCaseOther?: string;
 }
 
 /**
@@ -35,6 +40,8 @@ export interface SaveStepInput {
   companyName?: string;
   teamSize?: TeamSize;
   primaryUseCase?: UseCase;
+  useCases?: UseCase[];
+  useCaseOther?: string;
   connectedProviders?: string[];
   timeRange?: TimeRange;
   channels?: Record<string, string[]>;
@@ -46,10 +53,19 @@ export interface SaveStepInput {
  * never need `toTeamSize` / `toUseCase` themselves.
  */
 export function toWorkspaceInput(company: CompanyForm): CreateWorkspaceInput {
+  const useCases = toUseCases(company.useCases);
+  const other = company.useCaseOther.trim();
+
   return {
     companyName: company.company.trim(),
     teamSize: toTeamSize(company.size),
-    primaryUseCase: toUseCase(company.useCase),
+    // The list is the real answer; `primaryUseCase` is its first entry because
+    // that single field is what the backend's older read paths still use.
+    primaryUseCase: useCases[0],
+    useCases,
+    // Only sent alongside the checkbox it belongs to — a stale line typed and
+    // then unchecked must not be stored as an answer.
+    ...(useCases.includes("other") && other ? { useCaseOther: other } : {}),
   };
 }
 

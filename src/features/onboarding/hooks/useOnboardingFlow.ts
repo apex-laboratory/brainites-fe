@@ -17,7 +17,11 @@ const INITIAL_COMPANY: CompanyForm = {
    * disabled until this is filled in. */
   company: "",
   size: "51–200",
-  useCase: "support",
+  /* Nothing pre-checked — the question is multi-select, and a pre-ticked box
+   * would be answered on the user's behalf. `StepCompany` keeps Next disabled
+   * until at least one is picked. */
+  useCases: [],
+  useCaseOther: "",
   range: "90 days",
 };
 
