@@ -7,9 +7,11 @@ export {
   SubdomainSchema,
   needsSubdomain,
   type ChannelSelection,
+  type DiscardGroup,
   type Source,
   type SourceChannel,
   type SourceProvider,
+  type SourceReport,
   type SourceStatus,
   type SyncStatus,
 } from "./sources.schemas";

@@ -6,11 +6,13 @@ import {
   AuthorizeSchema,
   SourceChannelListSchema,
   SourceListSchema,
+  SourceReportSchema,
   type Authorize,
   type ChannelSelection,
   type Source,
   type SourceChannel,
   type SourceProvider,
+  type SourceReport,
 } from "./sources.schemas";
 
 /**
@@ -43,6 +45,14 @@ export const sourcesApi = {
 
   channels: (sourceId: string): Promise<SourceChannel[]> =>
     api.get(`/sources/${sourceId}/channels`, SourceChannelListSchema),
+
+  /**
+   * What this source read, what became knowledge, and why the rest didn't.
+   * Strictly parsed: every field is rendered as a number or a reason the user is
+   * meant to trust, so drift should be loud rather than silently blank.
+   */
+  report: (sourceId: string): Promise<SourceReport> =>
+    api.get(`/sources/${sourceId}/report`, SourceReportSchema),
 
   /** Persist the channel selection + lookback window. Returns the full list. */
   saveChannels: (
@@ -77,4 +87,6 @@ export const sourceKeys = {
   all: (workspaceId: string) => ["sources", workspaceId] as const,
   channels: (workspaceId: string, sourceId: string) =>
     ["sources", workspaceId, "channels", sourceId] as const,
+  report: (workspaceId: string, sourceId: string) =>
+    ["sources", workspaceId, "report", sourceId] as const,
 };
