@@ -4,13 +4,13 @@ import { api } from "@/lib/api";
 
 import {
   AuthorizeSchema,
-  SourceChannelListSchema,
   SourceListSchema,
+  SourceScopeSchema,
   type Authorize,
   type ChannelSelection,
   type Source,
-  type SourceChannel,
   type SourceProvider,
+  type SourceScope,
 } from "./sources.schemas";
 
 /**
@@ -41,15 +41,20 @@ export const sourcesApi = {
       ...(returnTo ? { returnTo } : {}),
     }),
 
-  channels: (sourceId: string): Promise<SourceChannel[]> =>
-    api.get(`/sources/${sourceId}/channels`, SourceChannelListSchema),
+  /** The source's scope: its channels + the persisted lookback window. */
+  scope: (sourceId: string): Promise<SourceScope> =>
+    api.get(`/sources/${sourceId}/channels`, SourceScopeSchema),
 
-  /** Persist the channel selection + lookback window. Returns the full list. */
-  saveChannels: (
+  /**
+   * Persist the channel selection + lookback window. Returns the scope as now
+   * stored — including `lookbackDays` — so the caller can seed its cache from
+   * the response rather than refetching to learn what was saved.
+   */
+  saveScope: (
     sourceId: string,
     selection: ChannelSelection,
-  ): Promise<SourceChannel[]> =>
-    api.patch(`/sources/${sourceId}/channels`, SourceChannelListSchema, selection),
+  ): Promise<SourceScope> =>
+    api.patch(`/sources/${sourceId}/channels`, SourceScopeSchema, selection),
 
   /**
    * Import this source's history — a sweep scoped to this one connection.
@@ -75,6 +80,6 @@ export const sourcesApi = {
  */
 export const sourceKeys = {
   all: (workspaceId: string) => ["sources", workspaceId] as const,
-  channels: (workspaceId: string, sourceId: string) =>
-    ["sources", workspaceId, "channels", sourceId] as const,
+  scope: (workspaceId: string, sourceId: string) =>
+    ["sources", workspaceId, "scope", sourceId] as const,
 };
