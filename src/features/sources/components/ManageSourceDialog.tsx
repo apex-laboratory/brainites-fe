@@ -26,17 +26,30 @@ import { useDisconnectSource } from "../hooks/useDisconnectSource";
 import { useSourceChannels } from "../hooks/useSourceChannels";
 import { SourceStatusLine } from "./SourceStatus";
 
-/** `unchanged` leaves the backend's current lookback window untouched — the
- * API has no endpoint that reveals it, so we must not guess a value to pre-select. */
-type LookbackChoice = "unchanged" | "30" | "90" | "180" | "365";
+/** The windows we offer. The saved value always wins over these — see
+ * {@link lookbackOptions} — so a connection scoped to something off-list (the
+ * API accepts 1–730) still shows its real setting. */
+const LOOKBACK_PRESETS = [30, 90, 180, 365] as const;
 
-const LOOKBACK_OPTIONS: SegmentedOption<LookbackChoice>[] = [
-  { value: "unchanged", label: "Unchanged" },
-  { value: "30", label: "30 days" },
-  { value: "90", label: "90 days" },
-  { value: "180", label: "6 months" },
-  { value: "365", label: "1 year" },
-];
+function lookbackLabel(days: number): string {
+  if (days === 365) return "1 year";
+  if (days === 730) return "2 years";
+  if (days % 30 === 0 && days >= 150) return `${days / 30} months`;
+  return `${days} days`;
+}
+
+/**
+ * Preset windows, plus the saved one when it isn't a preset — the segmented
+ * control has no "other" state, so an unlisted saved value would otherwise
+ * render with nothing selected.
+ */
+function lookbackOptions(saved: number | null): SegmentedOption<string>[] {
+  const days =
+    saved === null || LOOKBACK_PRESETS.includes(saved as (typeof LOOKBACK_PRESETS)[number])
+      ? [...LOOKBACK_PRESETS]
+      : [...LOOKBACK_PRESETS, saved].sort((a, b) => a - b);
+  return days.map((d) => ({ value: String(d), label: lookbackLabel(d) }));
+}
 
 export interface ManageSourceDialogProps {
   source: Source;
@@ -48,8 +61,9 @@ export interface ManageSourceDialogProps {
  * Scope dialog for one connected source: which channels / pages / repos the
  * brain reads, how far back to look, and disconnecting.
  *
- * The channels query stays idle until the dialog opens, so a grid of cards
- * doesn't fire one request per source on mount.
+ * The scope query stays idle until the dialog opens, so a grid of cards doesn't
+ * fire one request per source on mount. It returns the saved lookback along with
+ * the channels, so both controls open showing what's actually persisted.
  */
 export function ManageSourceDialog({ source, meta, trigger }: ManageSourceDialogProps) {
   const [open, setOpen] = useState(false);
@@ -85,22 +99,24 @@ export function ManageSourceDialog({ source, meta, trigger }: ManageSourceDialog
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <SectionLabel className="flex-none pb-0">Look back</SectionLabel>
-            <Segmented
-              ariaLabel="Lookback window"
-              className="ml-auto"
-              value={
-                channels.lookbackDays === null
-                  ? "unchanged"
-                  : (String(channels.lookbackDays) as LookbackChoice)
-              }
-              options={LOOKBACK_OPTIONS}
-              onChange={(choice) =>
-                channels.setLookbackDays(choice === "unchanged" ? null : Number(choice))
-              }
-            />
-          </div>
+          {/* Hidden outright on a failed read — the picker below owns the error
+              surface, and a control with no selection would misreport the scope. */}
+          {!channels.isError && (
+            <div className="flex flex-wrap items-center gap-3">
+              <SectionLabel className="flex-none pb-0">Look back</SectionLabel>
+              {channels.lookbackDays === null ? (
+                <Skeleton className="ml-auto h-[38px] w-[280px]" />
+              ) : (
+                <Segmented
+                  ariaLabel="Lookback window"
+                  className="ml-auto"
+                  value={String(channels.lookbackDays)}
+                  options={lookbackOptions(channels.savedLookbackDays)}
+                  onChange={(choice) => channels.setLookbackDays(Number(choice))}
+                />
+              )}
+            </div>
+          )}
 
           <div>
             <div className="mb-2.5 flex items-center gap-2">

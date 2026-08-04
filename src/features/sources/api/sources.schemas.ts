@@ -183,6 +183,18 @@ export const SourceChannelListSchema = z.array(SourceChannelSchema);
 export const LOOKBACK_MIN_DAYS = 1;
 export const LOOKBACK_MAX_DAYS = 730;
 
+/**
+ * A source's full scope, as returned by **both** `GET` and `PATCH
+ * /sources/{id}/channels`. `lookbackDays` is the persisted window — the column
+ * is NOT NULL backend-side, so this is always a real number and the picker can
+ * show what's actually saved rather than a placeholder.
+ */
+export const SourceScopeSchema = z.object({
+  channels: SourceChannelListSchema,
+  lookbackDays: z.number().int().min(LOOKBACK_MIN_DAYS).max(LOOKBACK_MAX_DAYS),
+});
+export type SourceScope = z.infer<typeof SourceScopeSchema>;
+
 /** `PATCH /sources/{id}/channels` request body — snake_case, `extra="forbid"`. */
 export const ChannelSelectionSchema = z.object({
   channels: z.array(
@@ -192,11 +204,8 @@ export const ChannelSelectionSchema = z.object({
       selected: z.boolean(),
     }),
   ),
-  lookback_days: z
-    .number()
-    .int()
-    .min(LOOKBACK_MIN_DAYS)
-    .max(LOOKBACK_MAX_DAYS)
-    .optional(),
+  // Always sent, never omitted: the picker knows the saved value (it came back
+  // on the read), so it can restate it and the response can echo it back.
+  lookback_days: z.number().int().min(LOOKBACK_MIN_DAYS).max(LOOKBACK_MAX_DAYS),
 });
 export type ChannelSelection = z.infer<typeof ChannelSelectionSchema>;

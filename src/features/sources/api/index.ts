@@ -12,6 +12,7 @@ export {
   type SourceChannel,
   type SourceProvider,
   type SourceReport,
+  type SourceScope,
   type SourceStatus,
   type SyncStatus,
 } from "./sources.schemas";
