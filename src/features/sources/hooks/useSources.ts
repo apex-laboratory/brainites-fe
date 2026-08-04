@@ -12,6 +12,10 @@ export type SourceEntry = {
   meta: SourceMeta;
 };
 
+/** Poll cadence while a history import runs. An import takes minutes, not
+ * seconds, so this is about the card resolving on its own — not live progress. */
+const IMPORT_POLL_MS = 5_000;
+
 /** Sum a nullish per-source field, returning `null` when no source reports it. */
 function sumReported(
   sources: Source[],
@@ -63,6 +67,11 @@ export function useSources() {
   const query = useQuery({
     queryKey: sourceKeys.all(workspaceId),
     queryFn: () => sourcesApi.list(),
+    // A history import runs server-side with no way to push us its result, so
+    // poll while one is in flight — and stop the moment none is, so an idle
+    // Sources page isn't refetching forever.
+    refetchInterval: (q) =>
+      (q.state.data ?? []).some((s) => s.syncStatus === "syncing") ? IMPORT_POLL_MS : false,
   });
 
   const sources = useMemo(

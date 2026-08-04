@@ -78,6 +78,24 @@ export const SourceSchema = z.object({
   health: z.number().min(0).max(100).nullable(),
   createdAt: IsoDateTimeSchema,
 
+  /**
+   * When this source's *history* was imported. Connecting a source ingests
+   * nothing on its own, so `null` means its past has never been fetched and the
+   * source only knows about events since it was connected. Distinct from
+   * `lastSyncedAt`, which is the incremental cursor and moves on every sync.
+   */
+  backfilledAt: IsoDateTimeSchema.nullish(),
+  /**
+   * Backend-computed: history never imported *and* nothing importing it right
+   * now. The single source of truth for whether to offer "Import history" — do
+   * not re-derive it from `backfilledAt`, because the backend also accounts for
+   * an in-flight import and for one that was queued but never picked up.
+   *
+   * `nullish` so this file can ship ahead of the backend; absent reads as
+   * "don't offer it", which is the safe default.
+   */
+  needsBackfill: z.boolean().nullish(),
+
   pendingItems: z.number().nullish(),
   activeChannelCount: z.number().nullish(),
   extractedLabel: z.string().nullish(),

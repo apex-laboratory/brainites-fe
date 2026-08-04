@@ -38,11 +38,18 @@ export function describeSource(source: Source): SourcePresentation {
     };
   }
 
+  // A source whose history was never imported is the one state the user has to
+  // act on, so it outranks the sync labels below — "Awaiting first sync" reads
+  // like something that resolves on its own, and this one never does.
+  if (source.needsBackfill) {
+    return { tone: "amber", label: "History not imported", pulse: false };
+  }
+
   switch (source.syncStatus) {
     case "healthy":
       return { tone: "green", label: "Connected", pulse: true };
     case "syncing":
-      return { tone: "accent", label: "Syncing", pulse: true };
+      return { tone: "accent", label: "Importing history", pulse: true };
     case "pending":
       return { tone: "amber", label: "Awaiting first sync", pulse: false };
     case "error":

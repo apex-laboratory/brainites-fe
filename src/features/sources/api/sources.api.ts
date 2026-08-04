@@ -51,6 +51,18 @@ export const sourcesApi = {
   ): Promise<SourceChannel[]> =>
     api.patch(`/sources/${sourceId}/channels`, SourceChannelListSchema, selection),
 
+  /**
+   * Import this source's history — a sweep scoped to this one connection.
+   *
+   * Connecting a source ingests nothing on its own, so without this a source
+   * added outside onboarding only ever knows about events from the moment it
+   * was connected. `202` for a newly started import, `200` when one was already
+   * in flight. The body is the sweep, which the card doesn't need: it tracks
+   * progress off `syncStatus` on the refetched source, so it's discarded here.
+   */
+  backfill: (sourceId: string): Promise<void> =>
+    api.post(`/sources/${sourceId}/backfill`, z.unknown()).then(() => undefined),
+
   /** Revoke provider-side, then delete the connection. `204`, no body. */
   disconnect: (sourceId: string): Promise<void> =>
     api.post(`/sources/${sourceId}/disconnect`, z.void()),
