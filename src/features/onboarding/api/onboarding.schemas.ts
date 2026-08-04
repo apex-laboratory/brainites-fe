@@ -20,7 +20,21 @@ import { WorkspaceSummarySchema } from "@/features/auth/api/auth.schemas";
 export const TeamSizeSchema = z.enum(["1-10", "11-50", "51-200", "200+"]);
 export type TeamSize = z.infer<typeof TeamSizeSchema>;
 
-export const UseCaseSchema = z.enum(["support", "ops", "eng", "agents"]);
+export const UseCaseSchema = z.enum([
+  "support",
+  "ops",
+  "eng",
+  "agents",
+  "sales",
+  "product",
+  "people",
+  "finance",
+  "data",
+  "marketing",
+  // The wizard's "Something else" checkbox; its typed text rides along in
+  // `useCaseOther`, never inside this list.
+  "other",
+]);
 export type UseCase = z.infer<typeof UseCaseSchema>;
 
 export const TimeRangeSchema = z.enum(["30d", "90d", "6mo", "all"]);
@@ -49,6 +63,20 @@ export function toTeamSize(display: string): TeamSize {
 /** The wizard's use-case ids already match the backend Literal; validate defensively. */
 export function toUseCase(value: string): UseCase {
   return UseCaseSchema.catch("support").parse(value);
+}
+
+/**
+ * The multi-select answer as the wire's `useCases`. Unknown ids are dropped
+ * rather than coerced — `toUseCase`'s "support" fallback is right for the single
+ * required field, but here it would invent a selection the user never made. An
+ * empty result still sends `["support"]` so the list and `primaryUseCase` (which
+ * is required and falls back the same way) can never disagree.
+ */
+export function toUseCases(values: string[]): UseCase[] {
+  const parsed = values.filter(
+    (value): value is UseCase => UseCaseSchema.safeParse(value).success
+  );
+  return parsed.length > 0 ? parsed : ["support"];
 }
 
 /** "90 days" / "6 months" / "All time" → "90d" / "6mo" / "all". */

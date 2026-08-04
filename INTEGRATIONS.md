@@ -530,11 +530,23 @@ Only a valid JWT is required (the signup token carries `workspaceId=null`).
 Request body — **snake_case**:
 
 ```json
-{ "company_name": "Riverline", "team_size": "51-200", "primary_use_case": "support" }
+{
+  "company_name": "Riverline",
+  "team_size": "51-200",
+  "primary_use_case": "support",
+  "use_cases": ["support", "eng", "other"],
+  "use_case_other": "Vendor security questionnaires"
+}
 ```
 
 `team_size` ∈ `1-10 | 11-50 | 51-200 | 200+`;
-`primary_use_case` ∈ `support | ops | eng | agents`.
+`primary_use_case` / `use_cases[]` ∈
+`support | ops | eng | agents | sales | product | people | finance | data | marketing | other`.
+
+The wizard's use-case question is multi-select: `use_cases` carries the whole
+selection, `primary_use_case` (required, single) its first entry. Omitting
+`use_cases` stores `[primary_use_case]`. `use_case_other` (max 200 chars) is the
+free text typed behind the `other` checkbox.
 
 Response `201` — includes a **fresh access token** already scoped to the new
 workspace, so the client can make workspace-scoped calls immediately without
@@ -569,6 +581,7 @@ Records workspace-level onboarding progress. Request body — **snake_case**;
   "company_name": "Riverline",
   "team_size": "51-200",
   "primary_use_case": "support",
+  "use_cases": ["support", "eng"],
   "connected_providers": ["slack", "notion"],
   "time_range": "90d"
 }

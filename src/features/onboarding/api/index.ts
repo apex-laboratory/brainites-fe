@@ -13,6 +13,7 @@ export {
   toTeamSize,
   toTimeRange,
   toUseCase,
+  toUseCases,
   type CreateWorkspaceResult,
   type OnboardingStepValue,
   type Sweep,

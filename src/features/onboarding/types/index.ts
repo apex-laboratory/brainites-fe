@@ -15,7 +15,12 @@ export type OnboardingStep =
 export type CompanyForm = {
   company: string;
   size: string;
-  useCase: string;
+  /** Multi-select — the user checks every reason they want Brainite for. The
+   * first entry is what the backend stores as `primaryUseCase`. */
+  useCases: string[];
+  /** Free text behind the "Other" checkbox; ignored unless `useCases`
+   * includes `other`. */
+  useCaseOther: string;
   range: string;
 };
 
