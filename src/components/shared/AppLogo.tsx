@@ -4,13 +4,16 @@ import { BRAND } from "@/constants/brand";
 import logoLight from "@/assets/brand/brainite-exports/header-logo-transparent.png";
 import logoDark from "@/assets/brand/brainite-exports/dark-variant-transparent.png";
 import logoMark from "@/assets/brand/brainite-exports/favicon-transparent.png";
+import logoMarkDark from "@/assets/brand/brainite-exports/mark-dark-transparent.png";
 
 /**
  * Brainite brand lockup. Renders the provided transparent logo exports
  * directly (no CSS/SVG recreation):
  *  - light surfaces  → dark "brainite" wordmark lockup
  *  - dark surfaces   → cream wordmark lockup (`onDark`)
- *  - collapsed/mark  → node mark only (`markOnly`)
+ *  - collapsed/mark  → node mark only (`markOnly`), which also honours
+ *    `onDark`: the default mark's nodes are near-black and disappear on a
+ *    dark surface, so `mark-dark-transparent.png` carries the cream nodes.
  */
 
 const SIZES = {
@@ -64,7 +67,13 @@ export function AppLogo({
 }: AppLogoProps) {
   const s = SIZES[size];
   const variant = markOnly ? "mark" : onDark ? "dark" : "light";
-  const src = markOnly ? logoMark : onDark ? logoDark : logoLight;
+  const src = markOnly
+    ? onDark
+      ? logoMarkDark
+      : logoMark
+    : onDark
+      ? logoDark
+      : logoLight;
   const height = markOnly ? s.mark : s.lockup;
   const width = Math.round(height * RATIO[variant]);
   const marginLeft = flush ? -Math.round(width * LEFT_PAD[variant]) : undefined;

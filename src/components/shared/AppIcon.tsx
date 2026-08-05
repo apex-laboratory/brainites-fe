@@ -45,6 +45,7 @@ import { MenuIcon } from "@/components/ui/menu";
 import { BrainIcon } from "@/components/ui/brain";
 import { BadgeAlertIcon } from "@/components/ui/badge-alert";
 import { RefreshCWIcon } from "@/components/ui/refresh-cw";
+import { SunMoonIcon } from "@/components/ui/sun-moon";
 
 /**
  * Every `@lucide-animated` component exposes the same imperative handle. The
@@ -121,6 +122,9 @@ const ICON_MAP = {
    * a struck-through bolt reads closer to "disconnect" than a shredder would. */
   disconnect: ZapOffIcon,
   refresh: RefreshCWIcon,
+  /** Light/dark mode switch. One glyph for both states — the label and
+   * `aria-pressed` carry the direction, so the icon never flips mid-press. */
+  theme: SunMoonIcon,
 } satisfies Record<string, AnimatedIcon>;
 
 export type AppIconName = keyof typeof ICON_MAP;
