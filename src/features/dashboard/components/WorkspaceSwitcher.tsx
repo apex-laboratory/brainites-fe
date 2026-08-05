@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useTheme } from "@/app/providers/ThemeProvider";
 import { AppIcon, AppLogo } from "@/components/shared";
 import {
   DropdownMenu,
@@ -46,17 +47,23 @@ export interface WorkspaceSwitcherProps {
   onLogout: () => void;
 }
 
-/** Square workspace mark — the Brainite node logo on a light chip. */
+/**
+ * The Brainite node mark, rendered flush on whatever surface it sits on.
+ *
+ * It used to sit on a `bg-paper-2` chip — but `--paper-2` is pure white, so on
+ * the cream sidebar the transparent PNG read as a white sticker pasted behind
+ * the logo. The asset already carries its own padding; it needs no plate. The
+ * variant follows the theme because the default mark's nodes are near-black.
+ */
 function WorkspaceMark({ className }: { className?: string }) {
+  const { mode } = useTheme();
   return (
-    <span
-      className={cn(
-        "grid size-8 shrink-0 place-items-center overflow-hidden rounded-[9px] border border-line bg-paper-2",
-        className
-      )}
-    >
-      <AppLogo markOnly size="sm" />
-    </span>
+    <AppLogo
+      markOnly
+      size="sm"
+      onDark={mode === "dark"}
+      className={cn("shrink-0", className)}
+    />
   );
 }
 

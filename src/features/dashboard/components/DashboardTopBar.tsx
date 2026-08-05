@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useAuth } from "@/app/providers/AuthProvider";
+import { useTheme } from "@/app/providers/ThemeProvider";
 import { BRAND } from "@/constants/brand";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
@@ -41,7 +42,9 @@ export function DashboardTopBar({
 }: DashboardTopBarProps) {
   const navigate = useNavigate();
   const { workspace } = useAuth();
+  const { mode, toggleMode } = useTheme();
   const hasNotifications = reviewCount > 0;
+  const isDark = mode === "dark";
 
   return (
     <header className="sticky top-0 z-20 flex h-[60px] shrink-0 items-center gap-3.5 border-b border-line bg-ivory/85 pl-6 pr-6 backdrop-blur-md backdrop-saturate-150">
@@ -87,6 +90,21 @@ export function DashboardTopBar({
             ⌘K
           </kbd>
         </button>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={toggleMode}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-pressed={isDark}
+              className={ICON_BUTTON}
+            >
+              <AppIcon name="theme" size={18} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>{isDark ? "Light mode" : "Dark mode"}</TooltipContent>
+        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger asChild>
