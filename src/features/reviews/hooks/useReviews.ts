@@ -17,6 +17,8 @@ import {
   type WriteReviewBody,
 } from "../api";
 import { mapReview } from "../mappers";
+import { formatQueueAge, queueAgeMs, queueAlertLevel } from "../utils/escalation";
+import { reviewStatsOptions } from "./useReviewStats";
 
 export type ReviewVerdict = "approve" | "reject";
 
@@ -68,16 +70,14 @@ export function useReviews() {
   const queryClient = useQueryClient();
 
   const listKey = reviewKeys.list(workspaceId, { status: "pending" });
-  const statsKey = reviewKeys.stats(workspaceId);
 
   const listQuery = useQuery({
     queryKey: listKey,
     queryFn: () => reviewsApi.list({ status: "pending" }),
   });
-  const statsQuery = useQuery({
-    queryKey: statsKey,
-    queryFn: () => reviewsApi.stats(),
-  });
+  // Shared with the nav badge and the escalation alert — same key, same
+  // options, so this page and the chrome can't report different queue states.
+  const statsQuery = useQuery(reviewStatsOptions(workspaceId));
 
   const queue = useMemo(
     () => (listQuery.data ?? []).map(mapReview),
@@ -89,6 +89,14 @@ export function useReviews() {
     ? stats.pending + stats.approved + stats.rejected
     : queue.length;
   const done = stats ? stats.approved + stats.rejected : 0;
+
+  // How long the queue's longest-waiting item has sat. The same number the
+  // toast and the blocking modal escalate on, shown plainly on the page they
+  // send people to — and graded by the same thresholds, so a queue the chrome
+  // is shouting about doesn't look calm once you arrive.
+  const oldestAgeMs = queueAgeMs(stats?.oldestPendingAt);
+  const oldestAgeLabel = oldestAgeMs === null ? null : formatQueueAge(oldestAgeMs);
+  const oldestLevel = queueAlertLevel(oldestAgeMs);
 
   // Optimistic removal shared by every resolution path: drop the given ids from
   // the pending list, snapshotting for rollback on failure.
@@ -174,6 +182,8 @@ export function useReviews() {
     queue,
     total,
     done,
+    oldestAgeLabel,
+    oldestLevel,
     approve,
     reject,
     write,

@@ -40,12 +40,19 @@ export type ReviewOut = z.infer<typeof ReviewSchema>;
 
 export const ReviewListSchema = z.array(ReviewSchema);
 
-/** `GET /reviews/stats` → approve/reject counts + rejection rate. */
+/** `GET /reviews/stats` → approve/reject counts, rejection rate, queue age. */
 export const ReviewStatsSchema = z.object({
   pending: z.number(),
   approved: z.number(),
   rejected: z.number(),
   rejectionRate: z.number(),
+  /**
+   * When the longest-waiting pending review was created; `null` on an empty
+   * queue. The count alone under-reports a stalled queue — three items from a
+   * minute ago and three that have sat for a fortnight are the same number and
+   * very different situations. This is what the dashboard escalates on.
+   */
+  oldestPendingAt: IsoDateTimeSchema.nullish(),
 });
 export type ReviewStats = z.infer<typeof ReviewStatsSchema>;
 

@@ -4,6 +4,7 @@ import { AppIcon, ErrorState, Meter, PageHeader, Skeleton } from "@/components/s
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/utils/cn";
 
 import { ReviewCard } from "../components/ReviewCard";
 import { useReviews } from "../hooks/useReviews";
@@ -14,6 +15,8 @@ export function ReviewsPage() {
     queue,
     total,
     done,
+    oldestAgeLabel,
+    oldestLevel,
     approve,
     reject,
     write,
@@ -96,10 +99,17 @@ export function ReviewsPage() {
           </div>
           <div className="h-9 w-px bg-line" />
           <div className="text-center">
-            <div className="text-[22px] font-semibold tracking-[-0.03em] text-ink">
-              ~30s
+            <div
+              className={cn(
+                "text-[22px] font-semibold tracking-[-0.03em] text-ink",
+                oldestLevel !== "none" && "text-amber"
+              )}
+            >
+              {oldestAgeLabel ?? "—"}
             </div>
-            <div className="text-[11.5px] text-ink-3">avg per item</div>
+            <div className="text-[11.5px] text-ink-3">
+              {oldestAgeLabel ? "oldest waiting" : "nothing waiting"}
+            </div>
           </div>
         </Card>
 
