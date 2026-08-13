@@ -14,7 +14,7 @@ import {
 } from "@/features/dashboard/hooks";
 import { BrainChatProvider, useBrainChat } from "@/features/brain-chat";
 import { useDisclosure } from "@/hooks/useDisclosure";
-import { useReviewCount } from "@/features/reviews";
+import { ReviewQueueAlert, useReviewCount } from "@/features/reviews";
 import { ROUTES } from "@/constants/routes";
 
 /**
@@ -25,7 +25,7 @@ import { ROUTES } from "@/constants/routes";
  * opens the command palette and ⌘/ jumps to the chat tab.
  */
 export function DashboardLayout() {
-  const { logout } = useAuth();
+  const { logout, workspaceId } = useAuth();
   const navigate = useNavigate();
   const { collapsed, toggle } = useSidebarState();
   const { activeTitle } = useDashboardNav();
@@ -87,6 +87,11 @@ export function DashboardLayout() {
           onOpenChange={commandPalette.setOpen}
           onAsk={askBrain}
         />
+
+        {/* Escalates the same `/reviews/stats` data the badge above reads: a
+            toast at 24h, a modal to acknowledge at 72h. Re-keyed per workspace
+            so a switch can't inherit the previous one's snooze. */}
+        <ReviewQueueAlert key={workspaceId} />
       </div>
     </BrainChatProvider>
   );
