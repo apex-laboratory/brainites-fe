@@ -76,6 +76,7 @@ export const SkillSchema = z.object({
   name: z.string(),
   version: z.string(),
   status: z.string(),
+  description: z.string().nullish(),
   trigger: z.string().nullish(),
   baseLogic: z.string().nullish(),
   exceptionsBlock: z.array(z.unknown()).default([]),
@@ -111,6 +112,36 @@ export type CreateSkillBody = {
   baseLogic: string;
   description?: string;
 };
+
+/**
+ * Body for `PATCH /skills/{id}` — edit a skill from the dashboard (editor or
+ * admin). Every field is optional: only the keys present are written (a partial
+ * update), and changing `trigger`/`baseLogic` re-embeds the skill server-side.
+ * Returns the updated `SkillOut`. The backend 422s on any unknown key.
+ */
+export type UpdateSkillBody = {
+  name?: string;
+  trigger?: string;
+  baseLogic?: string;
+  description?: string;
+};
+
+/**
+ * `DELETE /skills/{id}` → the skill was soft-deleted (admin-only). The row stays
+ * in the table for history but no read surface serves it again.
+ */
+export const SkillDeleteResultSchema = z.object({
+  id: z.string(),
+  deleted: z.boolean(),
+});
+export type SkillDeleteResult = z.infer<typeof SkillDeleteResultSchema>;
+
+/** Backend caps mirrored from `UpdateSkillRequest`; the FE trims/validates to
+ * these before sending so the user sees an inline error, not a 422. */
+export const SKILL_NAME_MAX_LENGTH = 200;
+export const SKILL_TRIGGER_MAX_LENGTH = 2000;
+export const SKILL_BASE_LOGIC_MAX_LENGTH = 20_000;
+export const SKILL_DESCRIPTION_MAX_LENGTH = 2000;
 
 /** Backend cap on a submit `note`; anything longer is rejected with a 422. */
 export const SUBMIT_NOTE_MAX_LENGTH = 2000;
