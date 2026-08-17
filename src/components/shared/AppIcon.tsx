@@ -46,6 +46,9 @@ import { BrainIcon } from "@/components/ui/brain";
 import { BadgeAlertIcon } from "@/components/ui/badge-alert";
 import { RefreshCWIcon } from "@/components/ui/refresh-cw";
 import { SunMoonIcon } from "@/components/ui/sun-moon";
+import { SquarePenIcon } from "@/components/ui/square-pen";
+import { EyeIcon } from "@/components/ui/eye";
+import { DeleteIcon } from "@/components/ui/delete";
 
 /**
  * Every `@lucide-animated` component exposes the same imperative handle. The
@@ -125,6 +128,10 @@ const ICON_MAP = {
   /** Light/dark mode switch. One glyph for both states — the label and
    * `aria-pressed` carry the direction, so the icon never flips mid-press. */
   theme: SunMoonIcon,
+  /** Row actions on the skills registry: edit, view, and delete. */
+  edit: SquarePenIcon,
+  view: EyeIcon,
+  delete: DeleteIcon,
 } satisfies Record<string, AnimatedIcon>;
 
 export type AppIconName = keyof typeof ICON_MAP;
