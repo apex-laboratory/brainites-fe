@@ -14,7 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCompact } from "@/utils/format";
 
+import { DeleteSkillDialog } from "../components/DeleteSkillDialog";
 import { DraftDetailDialog } from "../components/DraftDetailDialog";
+import { EditSkillDialog } from "../components/EditSkillDialog";
 import { NewSkillDialog } from "../components/NewSkillDialog";
 import { SkillDetailDialog } from "../components/SkillDetailDialog";
 import { SkillsTable } from "../components/SkillsTable";
@@ -64,6 +66,19 @@ export function SkillsPage() {
   const [inspectingDraftId, setInspectingDraftId] = useState<string | null>(null);
   const inspectingDraft =
     drafts.rawItems.find((item) => item.id === inspectingDraftId) ?? null;
+
+  // The edit/delete targets, kept with their name so the dialogs can title
+  // themselves before any fetch resolves.
+  const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
+
+  // Row-action gating mirrors the submit rule: hide an action only when we
+  // positively know the user lacks the role (`role` is `null` until the first
+  // `/auth/me` resolves, and blanking the control for the owner on a cold load
+  // reads as broken). A real 403 still surfaces as its own toast.
+  // Edit is editor-or-admin; delete is admin-only.
+  const canEdit = role === null || role === "editor" || role === "admin";
+  const canDelete = role === null || role === "admin";
 
   // Submitting a draft is admin-only. Hide the action only when we positively
   // know the user isn't an admin — `role` is `null` until the first `/auth/me`
@@ -168,6 +183,10 @@ export function SkillsPage() {
               <SkillsTable
                 skills={skills}
                 onInspect={(id, name) => setInspecting({ id, name })}
+                onEdit={canEdit ? (id, name) => setEditing({ id, name }) : undefined}
+                onDelete={
+                  canDelete ? (id, name) => setDeleting({ id, name }) : undefined
+                }
                 emptyLabel={
                   hasQuery
                     ? "No skills match your search."
@@ -207,6 +226,10 @@ export function SkillsPage() {
               <SkillsTable
                 skills={drafts.skills}
                 onInspect={(id) => setInspectingDraftId(id)}
+                onEdit={canEdit ? (id, name) => setEditing({ id, name }) : undefined}
+                onDelete={
+                  canDelete ? (id, name) => setDeleting({ id, name }) : undefined
+                }
                 onSubmit={
                   knownNonAdmin
                     ? undefined
@@ -241,6 +264,12 @@ export function SkillsPage() {
         skillName={inspecting?.name}
         onClose={() => setInspecting(null)}
       />
+      <EditSkillDialog
+        skillId={editing?.id ?? null}
+        skillName={editing?.name}
+        onClose={() => setEditing(null)}
+      />
+      <DeleteSkillDialog skill={deleting} onClose={() => setDeleting(null)} />
       <DraftDetailDialog
         item={inspectingDraft}
         onClose={() => setInspectingDraftId(null)}

@@ -10,7 +10,12 @@ export { interactionsApi, interactionKeys } from "./interactions.api";
 export { type OverrideResult } from "./interactions.schemas";
 export {
   SUBMIT_NOTE_MAX_LENGTH,
+  SKILL_NAME_MAX_LENGTH,
+  SKILL_TRIGGER_MAX_LENGTH,
+  SKILL_BASE_LOGIC_MAX_LENGTH,
+  SKILL_DESCRIPTION_MAX_LENGTH,
   type CreateSkillBody,
+  type SkillDeleteResult,
   type SkillListItem,
   type SkillOut,
   type SkillSearchResult,
@@ -18,4 +23,5 @@ export {
   type SkillSubmitResult,
   type SkillVersionOut,
   type SubmitSkillBody,
+  type UpdateSkillBody,
 } from "./skills.schemas";

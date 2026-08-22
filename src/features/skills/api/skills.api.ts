@@ -1,6 +1,7 @@
 import { api, type Page } from "@/lib/api";
 
 import {
+  SkillDeleteResultSchema,
   SkillListSchema,
   SkillSchema,
   SkillSearchListSchema,
@@ -8,6 +9,7 @@ import {
   SkillSubmitResultSchema,
   SkillVersionListSchema,
   type CreateSkillBody,
+  type SkillDeleteResult,
   type SkillListItem,
   type SkillOut,
   type SkillSearchResult,
@@ -15,6 +17,7 @@ import {
   type SkillSubmitResult,
   type SkillVersionOut,
   type SubmitSkillBody,
+  type UpdateSkillBody,
 } from "./skills.schemas";
 
 export type SkillSearchParams = {
@@ -64,6 +67,18 @@ export const skillsApi = {
   /** Manually author a skill (admin-only) → a `draft` in the review queue. */
   create: (body: CreateSkillBody): Promise<SkillOut> =>
     api.post("/skills", SkillSchema, body),
+
+  /**
+   * Edit a skill (editor or admin). Partial: only the fields in `body` are
+   * written. Editing `trigger`/`baseLogic` re-embeds the skill server-side, so a
+   * viewer 403s and a duplicate name 409s. Returns the updated body.
+   */
+  update: (skillId: string, body: UpdateSkillBody): Promise<SkillOut> =>
+    api.patch(`/skills/${skillId}`, SkillSchema, body),
+
+  /** Soft-delete a skill (admin only). 404 when it's already gone. */
+  remove: (skillId: string): Promise<SkillDeleteResult> =>
+    api.delete(`/skills/${skillId}`, SkillDeleteResultSchema),
 
   /**
    * Move a draft into the review queue (`draft` → `review`) and open its review
