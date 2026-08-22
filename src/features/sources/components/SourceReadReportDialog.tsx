@@ -141,6 +141,8 @@ function Tally({
 /**
  * One reason-bucket. `label` is resolved backend-side from the pipeline stage, so
  * this renders whatever it's given rather than mapping internal stage names here.
+ * Stage + count only — no per-event sample text, deliberately: those were free-text
+ * model output that could quote source content verbatim.
  */
 function DiscardRow({ group }: { group: DiscardGroup }) {
   return (
@@ -149,18 +151,6 @@ function DiscardRow({ group }: { group: DiscardGroup }) {
         <span className="tnum text-[13px] font-bold text-ink">{group.count}</span>
         <span className="text-[13px] text-ink-2">{group.label}</span>
       </div>
-      {group.sampleReasons.length > 0 && (
-        <ul className="mt-2 flex flex-col gap-1.5">
-          {group.sampleReasons.map((reason) => (
-            <li
-              key={reason}
-              className="border-l-2 border-line pl-2.5 text-[12px] italic leading-snug text-ink-3"
-            >
-              {reason}
-            </li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

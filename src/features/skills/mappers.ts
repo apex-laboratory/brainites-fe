@@ -46,7 +46,7 @@ export function mapSearchHit(r: SkillSearchResult): Skill {
     id: r.id,
     name: r.name,
     v: r.version,
-    src: asSourceIds([r.sourceAuthority]),
+    src: asSourceIds(r.sourceProviders),
     status: asStatus(r.status),
     similarity: r.similarity,
     ...mapMetrics(r.calls30d, r.callSeries, r.updatedAt),

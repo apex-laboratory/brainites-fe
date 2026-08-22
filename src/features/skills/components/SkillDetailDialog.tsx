@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { asSourceId } from "@/constants/sources";
+import { asSourceIds } from "@/constants/sources";
 import { formatRelativeTime } from "@/utils/date";
 
 import { useSkill } from "../hooks/useSkill";
@@ -110,7 +110,7 @@ export function SkillDetailDialog({
     refetch,
   } = useSkill(skillId);
 
-  const authority = asSourceId(skill?.sourceAuthority);
+  const sources = asSourceIds(skill?.sourceProviders ?? []);
 
   return (
     <Dialog open={skillId !== null} onOpenChange={(next) => !next && onClose()}>
@@ -185,12 +185,18 @@ export function SkillDetailDialog({
                 </Field>
               )}
 
-              {(authority || skill.confidence != null) && (
+              {(sources.length > 0 || skill.confidence != null) && (
                 <div className="flex flex-wrap items-center gap-4 border-t border-line-soft pt-4">
-                  {authority && (
+                  {sources.length > 0 && (
                     <span className="flex items-center gap-1.5 text-[12.5px] text-ink-3">
-                      <SourceIcon id={authority} size={16} branded />
-                      Source of authority
+                      <span className="flex gap-1">
+                        {sources.map((id) => (
+                          <SourceIcon key={id} id={id} size={16} branded />
+                        ))}
+                      </span>
+                      {sources.length > 1
+                        ? `Derived from ${sources.length} sources`
+                        : "Source lineage"}
                     </span>
                   )}
                   {skill.confidence != null && (

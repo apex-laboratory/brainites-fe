@@ -134,15 +134,15 @@ export const SourceListSchema = z.array(z.unknown()).transform((rows) =>
  * "relevance_gate" — and a stage added to the pipeline later still gets a label
  * without a frontend deploy. `stage` is kept for keys and debugging only.
  *
- * `sampleReasons` are verbatim model sentences, capped at three: they're free-text
- * and near-unique (56 discarded events produced 56 distinct ones), so the count
- * carries the signal and the samples carry the texture.
+ * The backend deliberately stops at stage + count: it used to also send a few
+ * verbatim model sentences per bucket, but those are free-text and can quote the
+ * source content itself (ticket titles, commit messages) — internal-implementation
+ * detail with no place in a customer-facing dialog.
  */
 export const DiscardGroupSchema = z.object({
   stage: z.string(),
   label: z.string(),
   count: z.number(),
-  sampleReasons: z.array(z.string()).default([]),
 });
 export type DiscardGroup = z.infer<typeof DiscardGroupSchema>;
 
