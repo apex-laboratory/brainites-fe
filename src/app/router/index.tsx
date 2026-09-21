@@ -12,6 +12,8 @@ import { OverviewPage } from "@/features/dashboard/pages/OverviewPage";
 import { BrainChatPage } from "@/features/brain-chat";
 import { DecisionsPage } from "@/features/decisions/pages/DecisionsPage";
 import { ReviewsPage } from "@/features/reviews/pages/ReviewsPage";
+import { AgentBuilderPage } from "@/features/agents/pages/AgentBuilderPage";
+import { AgentsPage } from "@/features/agents/pages/AgentsPage";
 import { SourcesPage } from "@/features/sources/pages/SourcesPage";
 import { SkillsPage } from "@/features/skills/pages/SkillsPage";
 import { SettingsPage } from "@/features/settings/pages/SettingsPage";
@@ -61,6 +63,9 @@ export function AppRouter() {
           <Route path="reviews" element={<ReviewsPage />} />
           <Route path="sources" element={<SourcesPage />} />
           <Route path="skills" element={<SkillsPage />} />
+          <Route path="agents" element={<AgentsPage />} />
+          <Route path="agents/new" element={<AgentBuilderPage />} />
+          <Route path="agents/:agentId" element={<AgentBuilderPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Route>

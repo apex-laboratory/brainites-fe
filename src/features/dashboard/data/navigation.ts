@@ -21,10 +21,11 @@ export const NAV_MAIN: NavItem[] = [
   { key: "reviews", label: "Reviews", icon: "review", path: ROUTES.reviews },
 ];
 
-/** Knowledge navigation group (Sources · Skills). */
+/** Knowledge navigation group (Sources · Skills · Agents). */
 export const NAV_KNOWLEDGE: NavItem[] = [
   { key: "sources", label: "Sources", icon: "sources", path: ROUTES.sources },
   { key: "skills", label: "Skills", icon: "skills", path: ROUTES.skills },
+  { key: "agents", label: "Agents", icon: "sparkles", path: ROUTES.agents },
 ];
 
 /** Settings is reachable from the chrome (workspace menu / account) but is
